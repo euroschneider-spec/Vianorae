@@ -1,0 +1,5 @@
+import Link from 'next/link';
+import { Brand } from './site-header';
+import { ReadingSettings } from './reading-settings';
+import { getCopy, type Locale } from '@/lib/i18n';
+export function SiteFooter({locale}:{locale:Locale}) { const t=getCopy(locale);return <footer className="site-footer"><div className="container footer-top"><div><Link className="brand-link" href={`/${locale}`}><Brand/></Link><p>{t.footerLine}</p></div><nav aria-label="Footer"><Link href={`/${locale}/methodology`}>{t.nav[2]}</Link><Link href={`/${locale}/contact`}>{t.contact}</Link><Link href={`/${locale}/login`}>{t.workspace}</Link></nav></div><div className="container footer-bottom"><small>{t.footerNote}</small><nav aria-label="Legal"><Link href={`/${locale}/privacy`}>{t.privacy}</Link><Link href={`/${locale}/terms`}>{t.terms}</Link><Link href={`/${locale}/accessibility`}>{t.accessibility}</Link></nav><ReadingSettings locale={locale}/></div></footer>; }

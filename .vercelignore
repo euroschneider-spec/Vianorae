@@ -1,0 +1,9 @@
+.git
+.github
+supabase
+tests
+scripts
+docs
+playwright-report
+test-results
+*.tsbuildinfo

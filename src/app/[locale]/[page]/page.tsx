@@ -1,0 +1,8 @@
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { ArrowRight } from 'lucide-react';
+import { getCopy,isLocale } from '@/lib/i18n';
+import { getContent,contentPages,references } from '@/lib/content';
+export function generateStaticParams(){return contentPages.map(page=>({page}));}
+export async function generateMetadata({params}:{params:Promise<{locale:string;page:string}>}){const {locale,page}=await params;return {title:isLocale(locale)?getContent(locale,page)?.title:'VIANORAE'};}
+export default async function ContentPage({params}:{params:Promise<{locale:string;page:string}>}){const {locale,page}=await params;if(!isLocale(locale))notFound();const content=getContent(locale,page);if(!content)notFound();const t=getCopy(locale);return <main id="main-content" className="container"><div className="page-heading"><p className="eyebrow">VIANORAE · {t.methodVersion}</p><h1>{content.title}</h1><p className="lead">{content.intro}</p></div><article className="content-body prose">{content.sections.map(section=><section key={section.heading}><h2>{section.heading}</h2><p>{section.body}</p>{section.items?<ul>{section.items.map(item=><li key={item}>{item}</li>)}</ul>:null}</section>)}{page==='methodology'?<ul>{references.map(([name,url])=><li key={url}><a href={url}>{name}</a></li>)}</ul>:null}<div className="callout"><Link className="quiet-link" href={`/${locale}/${page==='for-organisations'?'dashboard':'example-guide'}`}>{page==='for-organisations'?t.openWorkspace:t.guide}<ArrowRight size={17} aria-hidden="true"/></Link></div></article></main>;}
