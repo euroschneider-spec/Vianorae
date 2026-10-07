@@ -19,7 +19,7 @@ html[data-theme=dark] .eyebrow,html[data-theme=dark] .status-message{color:#bdd9
 .responsibility-notice li{margin-bottom:8px}.small-note{font-size:.82rem;color:var(--muted)}
 .photo-editor{margin-block:24px}.photo-editor p{font-size:.86rem}.draft-photo{width:100%;max-width:600px;max-height:320px;object-fit:contain;margin-block:18px;background:var(--sand);border-radius:6px}
 .photo-editor input[type=file]{max-width:100%;overflow:hidden}.commitment{align-items:flex-start;margin-block:20px;line-height:1.6}.commitment input{flex-shrink:0;margin-top:3px}
-.organisation-form{max-width:900px;margin-bottom:28px}.organisation-form fieldset{padding:24px}.organisation-form button{margin-top:22px}.organisation-form fieldset:disabled{opacity:.8}
+.organisation-form{max-width:900px;margin-bottom:28px}.organisation-form .form-grid{align-items:start}.organisation-form .form-field>input,.organisation-form .form-field>select{height:calc(1.65em + 24px)}.organisation-form fieldset{padding:24px}.organisation-form button{margin-top:22px}.organisation-form fieldset:disabled{opacity:.8}
 .account-link{display:inline-flex;align-items:center;gap:7px;min-height:44px;min-width:44px;font-size:.75rem;text-decoration:none;max-width:150px}.account-link span{line-height:1.4}.account-link svg{flex-shrink:0}
 @media(max-width:1200px){.account-link span{display:none}.account-link{justify-content:center}.header-actions{gap:10px}}
 @media(max-width:760px){.photo-editor,.responsibility-notice,.publication-review,.organisation-form fieldset{padding:18px}.account-link{min-width:34px}.header-actions{gap:2px}}
