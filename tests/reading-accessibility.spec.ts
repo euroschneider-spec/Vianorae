@@ -66,8 +66,8 @@ test('popup can be moved by drag, keyboard and single-click controls, with viewp
   await handle.click();await panel.getByRole('button',{name:'Move left',exact:true}).click();expect((await panel.boundingBox())!.x).toBeCloseTo(initial!.x-24,0);
   await panel.getByRole('button',{name:'Reset panel position',exact:true}).click();
   const before=await panel.boundingBox();const grip=await handle.boundingBox();
-  await page.mouse.move(grip!.x+grip!.width/2,grip!.y+grip!.height/2);await page.mouse.down();await page.mouse.move(grip!.x+grip!.width/2-60,grip!.y+grip!.height/2+50,{steps:5});await page.mouse.up();
-  const moved=await panel.boundingBox();expect(moved!.x).toBeCloseTo(before!.x-60,0);expect(moved!.y).toBeCloseTo(Math.min(before!.y+50,1400-before!.height-16),0);
+  await page.mouse.move(grip!.x+grip!.width/2,grip!.y+grip!.height/2);await page.mouse.down();await page.mouse.move(grip!.x+grip!.width/2+60,grip!.y+grip!.height/2+50,{steps:5});await page.mouse.up();
+  const moved=await panel.boundingBox();expect(moved!.x).toBeCloseTo(before!.x+60,0);expect(moved!.y).toBeCloseTo(Math.min(before!.y+50,1400-before!.height-16),0);
   await page.setViewportSize({width:320,height:700});await expect.poll(async()=>panel.evaluate(node=>{const r=node.getBoundingClientRect();return r.left>=16 && r.top>=16 && r.right<=window.innerWidth-16 && r.bottom<=window.innerHeight-16;})).toBe(true);
   await page.keyboard.press('Escape');await expect(page.locator('.floating-reading')).toBeFocused();
 });

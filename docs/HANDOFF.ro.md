@@ -29,7 +29,7 @@ Rezultatele și limitele verificărilor sunt în `VERIFICATION.md`. Următoarea 
 
 ## Actualizare accesibilitate
 
-Un singur control flotant deschide popup-ul de lectură, poziționat inițial în stânga imaginii pe desktop. Popup-ul este fix la scroll, permite derularea paginii și ieșirea focusului prin Tab, se închide cu Escape sau butonul de închidere. Poate fi mutat din mâner, taste săgeată sau butoane de mutare. Preferințele existente rămân salvate în browser.
+Un singur control cu pictogramă, prins de marginea stângă a ecranului și centrat vertical, deschide popup-ul de lectură lângă el pe desktop și mobil. Popup-ul este fix la scroll, permite derularea paginii și ieșirea focusului prin Tab, se închide cu Escape sau butonul de închidere. Poate fi mutat din mâner, taste săgeată sau butoane de mutare. Preferințele existente rămân salvate în browser.
 
 Ghidul public și preview-ul demo oferă acum „Pas cu pas” și „Ghid complet în text”. Vederea integrală include toți pașii, descrierile, nivelurile senzoriale, indicațiile următoare și informațiile generale/proveniența fără imagini sau redare. Toate instrucțiunile, progresul și mesajele siteului sunt textuale. Nu există media audio/video în această livrare; pentru adăugări viitoare sunt necesare transcrieri pentru audio și subtitrări pentru video cu sunet. Aceste schimbări nu necesită migrare SQL.
 

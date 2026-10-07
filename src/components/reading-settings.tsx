@@ -13,11 +13,12 @@ function apply(p:Preferences) { const root=document.documentElement; root.datase
 
 const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(value,Math.max(min,max)));
 function placeLauncher(button:HTMLButtonElement) {
-  const anchor=document.querySelector<HTMLElement>('[data-reading-anchor]')?.getBoundingClientRect();
-  const bounds=button.getBoundingClientRect();const mobile=window.innerWidth<=760;
-  button.style.left=`${mobile?16:clamp(anchor?anchor.left-bounds.width-16:16,16,window.innerWidth-bounds.width-16)}px`;
-  button.style.top=`${mobile?window.innerHeight-bounds.height-16:clamp(anchor?.top??120,88,window.innerHeight-bounds.height-16)}px`;
+  const bounds=button.getBoundingClientRect();
+  // Dock to the viewport edge, independently of media and page content.
+  button.style.left='0px';
+  button.style.top=`${clamp((window.innerHeight-bounds.height)/2,8,window.innerHeight-bounds.height-8)}px`;
 }
+
 function movePanel(panel:HTMLDialogElement,left:number,top:number) {
   const bounds=panel.getBoundingClientRect();
   panel.style.left=`${clamp(left,16,window.innerWidth-bounds.width-16)}px`;
@@ -25,8 +26,8 @@ function movePanel(panel:HTMLDialogElement,left:number,top:number) {
 }
 function placePanel(panel:HTMLDialogElement,button:HTMLButtonElement) {
   const bounds=button.getBoundingClientRect();
-  // The popup's right edge sits just left of the image; its coordinates stay fixed on scroll.
-  movePanel(panel,bounds.right-panel.getBoundingClientRect().width,bounds.top);
+  // Open beside the left-edge tab; retain these coordinates during page scroll.
+  movePanel(panel,bounds.right+12,bounds.top);
 }
 
 export function ReadingSettingsProvider({locale,children}:{locale:Locale;children:React.ReactNode}) {

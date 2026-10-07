@@ -44,20 +44,21 @@ for(const locale of ['en','ro','de'] as const) {
     await expect(audio.getByRole('button',{name:t.stop,exact:true})).toBeDisabled();await expect(audio.getByRole('status')).not.toHaveText(t.finished);
   });
 }
-test('one fixed popup stays left of the image while the page scrolls and reflows at 320px',async({page})=>{
+test('one control docks to the left screen edge while the page scrolls and reflows at 320px',async({page})=>{
   await mockSpeech(page,'ro');await page.setViewportSize({width:1440,height:1000});
   for(const route of ['/ro','/ro/example-guide']) {
-    await page.goto(route);const trigger=page.locator('.floating-reading');const image=page.locator('[data-reading-anchor]').first();
+    await page.goto(route);const trigger=page.locator('.floating-reading');const image=page.locator('main img').first();
     await expect(page.getByRole('button',{name:'Setări de lectură',exact:true})).toHaveCount(1);await expect(page.locator('header .reading-trigger,.media-tools')).toHaveCount(0);
-    const tb=await trigger.boundingBox();const ib=await image.boundingBox();expect(tb!.x+tb!.width).toBeLessThan(ib!.x);
-    await trigger.click();const panel=page.getByRole('dialog');const before=await panel.boundingBox();expect(before!.x+before!.width).toBeLessThan(ib!.x);
+    const tb=await trigger.boundingBox();const ib=await image.boundingBox();expect(tb!.x).toBe(0);expect(tb!.width).toBe(48);expect(tb!.x+tb!.width).toBeLessThan(ib!.x);
+    await trigger.click();const panel=page.getByRole('dialog');const before=await panel.boundingBox();expect(before!.x).toBe(60);expect(before!.x+before!.width).toBeLessThan(ib!.x);
     await page.mouse.move(1400,800);await page.mouse.wheel(0,600);await expect.poll(()=>page.evaluate(()=>window.scrollY)).toBeGreaterThan(200);
     const after=await panel.boundingBox();expect(after!.x).toBeCloseTo(before!.x,0);expect(after!.y).toBeCloseTo(before!.y,0);
-    const triggerAfter=await trigger.boundingBox();expect(triggerAfter!.y).toBeCloseTo(tb!.y,0);await expect(panel).toBeVisible();
+    const triggerAfter=await trigger.boundingBox();expect(triggerAfter!.x).toBe(0);expect(triggerAfter!.y).toBeCloseTo(tb!.y,0);await expect(panel).toBeVisible();
     await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
     await page.screenshot({path:route==='/ro'?'docs/media-controls-preview.png':'docs/audio-guide-preview.png',fullPage:true});
     await page.setViewportSize({width:320,height:900});await page.evaluate(()=>document.documentElement.style.fontSize='32px');
     await expect.poll(async()=>panel.evaluate(node=>{const r=node.getBoundingClientRect();return r.left>=0 && r.right<=window.innerWidth && r.top>=0 && r.bottom<=window.innerHeight && node.scrollWidth<=node.clientWidth;})).toBe(true);
+    await expect.poll(async()=> (await trigger.boundingBox())!.x).toBe(0);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
     const result=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();expect(result.violations).toEqual([]);
     await page.keyboard.press('Escape');await page.setViewportSize({width:1440,height:1000});await page.evaluate(()=>document.documentElement.style.fontSize='');

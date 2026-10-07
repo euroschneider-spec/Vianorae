@@ -27,7 +27,7 @@ Existing browser checks also cover corrupt browser data, locale separation, publ
 
 ## Reading and sound-independent access
 
-A single fixed launcher and nonmodal popup replace the header duplicate and permanent media column. EN/RO/DE checks exercise initial focus, Escape, return focus, readable preferences, axe WCAG A/AA and 320px/200% reflow. Desktop browser-wheel checks confirm that the page scrolls while both the open popup and launcher retain their screen coordinates. Additional checks cover drag/arrow-key/single-click movement, reset, resize bounds, Tab leaving the popup and outside-click focus preservation.
+A single fixed launcher and nonmodal popup replace the header duplicate and permanent media column. EN/RO/DE checks exercise initial focus, Escape, return focus, readable preferences, axe WCAG A/AA and 320px/200% reflow. Browser checks assert the launcher is docked at x=0 on desktop and mobile. Desktop browser-wheel checks confirm that the page scrolls while both the open popup and launcher retain their screen coordinates. Additional checks cover drag/arrow-key/single-click movement, reset, resize bounds, Tab leaving the popup and outside-click focus preservation.
 
 Complete text mode includes all five steps, sensory labels, useful notes, next instructions and general/provenance information. It works without audio/video/images, reads the saved local draft, and retains the current step when returning to step-by-step mode. All instructions and messages are written on screen. No recorded audio/video files are present; optional synthetic speech reads the same visible text; future media requirements are documented in `ACCESSIBILITY.md`. No database migration was required.
 
