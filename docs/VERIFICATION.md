@@ -4,7 +4,7 @@
 
 Public EN/RO/DE pages, the fictional account-free Museum guide, QR navigation, reading preferences and browser-local demonstration editing remain covered by 47 Playwright scenarios, including eleven reading-panel/text checks and seven optional-speech/visibility checks. Real signup, email confirmation and first-owner organisation creation in the dedicated Vercel/Supabase preview were confirmed separately by the project owner.
 
-The online workspace is tested through the production Next.js server with two fictitious verified owners and separate organisations. The application uses its actual SSR cookies, server actions, image API and all four database migrations. An isolated PGlite PostgreSQL database enforces real RLS and constraints. Test-only Auth and Storage HTTP fixtures run on loopback; no real accounts, emails, files or application rows are created remotely. These are full local application-flow checks, not hosted Supabase service tests.
+The online workspace is tested through the production Next.js server with two fictitious verified owners and separate organisations. The application uses its actual SSR cookies, server actions, image API and all five database migrations. An isolated PGlite PostgreSQL database enforces real RLS and constraints. Test-only Auth and Storage HTTP fixtures run on loopback; no real accounts, emails, files or application rows are created remotely. These are full local application-flow checks, not hosted Supabase service tests.
 
 ## Checks
 
@@ -14,10 +14,12 @@ The online workspace is tested through the production Next.js server with two fi
 | ESLint / React checks | PASS |
 | Next.js production build | PASS with missing configuration and with explicit workspace fixture configuration |
 | Deployment packaging | PASS; all runtime source/assets and build inputs retained, root tooling excluded |
-| Database checks | PASS; 42 SQL security, consent, atomic save, conflict, translation and Storage-policy scenarios |
+| Database checks | PASS; 61 SQL security, consent, atomic save, conflict, translation and Storage-policy scenarios |
 | Public/demo browser scenarios | PASS; 47 scenarios: 29 existing regressions, 11 reading/text checks and 7 speech/visibility checks |
-| Online workspace flow | PASS; all 20 scenarios |
+| Online workspace flow | PASS; all 31 scenarios |
 | Production dependency audit | PASS; 0 reported vulnerabilities |
+
+The new verification checks cover confirmed-account requests without editor access, admin-only queue access, mandatory approval evidence, requests for information, versioned resubmission, manual approval, private audit evidence, suspension without sign-out, EN/RO/DE accessibility and 320px/200% reflow, and missing-migration registration/editor/photo denial.
 
 The online checks cover unauthenticated redirects/API denial; real app sign-in against simulated Auth; initial save before upload; persistent location/sensory values; PNG-to-private-WebP upload; server resizing and removal of original metadata; saved preview; access in a separate browser session; stale revision refusal with unsaved text retained; cancellable unsaved navigation; cross-tenant place/preview/photo denial; malformed image rejection; step reorder/removal; independent Romanian text/photo alt; EN/RO/DE WCAG A/AA axe checks; 320px reflow with 200% text; photo detachment retaining its private file; and sign-out revoking app access.
 
@@ -57,8 +59,12 @@ Run the demo checks first: the workspace command deliberately builds with fictit
 
 ## Evidence
 
-`home-preview.png`, `mobile-preview.png`, `guide-preview.png`, `workspace-preview.png`, `builder-photo-preview.png` and `registration-preview.png` cover the public/local foundation. `reading-panel-preview.png` and `text-guide-preview.png` show the new localized reading/text views. `media-controls-preview.png` and `audio-guide-preview.png` show the fixed popup and optional voice controls. `online-builder-preview.png` shows the authenticated editor with entirely fictitious local-fixture data.
+`home-preview.png`, `mobile-preview.png`, `guide-preview.png`, `workspace-preview.png`, `builder-photo-preview.png` and `registration-preview.png` cover the public/local foundation. `reading-panel-preview.png` and `text-guide-preview.png` show the new localized reading/text views. `media-controls-preview.png` and `audio-guide-preview.png` show the fixed popup and optional voice controls. `organisation-verification-preview.png` shows the platform review controls and private audit history with fictitious fixture evidence. `online-builder-preview.png` shows the authenticated editor with entirely fictitious local-fixture data.
 
 ## Packaging regression
 
 An earlier Vercel failure was caused by an unanchored `supabase` exclusion removing nested `src/lib/supabase` modules. Root-only exclusions and `npm run check:deployment` now protect application files from that regression.
+
+## Verification activation boundary
+
+The additive verification migration and initial platform-admin bootstrap are supplied for manual execution in the dedicated VIANORAE SQL Editor. Application gates fail closed until `organization_verification_schema_version()` returns 1. The full database boundary is active only after that SQL runs; local tests and a Vercel deployment cannot establish that it has been applied live. Existing organisations are retained pending review. The bootstrap grants platform administration to the selected confirmed VIANORAE Auth identity and does not approve its own application.

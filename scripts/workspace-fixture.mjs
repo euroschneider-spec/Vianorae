@@ -7,10 +7,11 @@ import { PGlite } from '@electric-sql/pglite';
 if (process.env.VIANORAE_TEST_FIXTURE !== '1') throw new Error('Test fixture must be explicitly enabled');
 const db = new PGlite();
 const id = n => `00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
-const users = [1,2].map(n => ({id:id(n),aud:'authenticated',role:'authenticated',email:`owner${n}@example.test`,email_confirmed_at:'2026-10-01T12:00:00Z',is_anonymous:false,app_metadata:{provider:'email'},user_metadata:{},created_at:'2026-10-01T12:00:00Z'}));
+const users = [1,2,3,4,5].map(n => ({id:id(n),aud:'authenticated',role:'authenticated',email:`owner${n}@example.test`,email_confirmed_at:'2026-10-01T12:00:00Z',is_anonymous:false,app_metadata:{provider:'email'},user_metadata:{},created_at:'2026-10-01T12:00:00Z'}));
+let verificationEnabled=true;
 const files = new Map(); const tokens = new Map(); let tail = Promise.resolve();
 const locked = fn => {const result=tail.then(fn);tail=result.catch(()=>{});return result;};
-await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key,email_confirmed_at timestamptz default now(),is_anonymous boolean not null default false);
+await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key,email_confirmed_at timestamptz default now(),is_anonymous boolean not null default false,email text default 'fixture@example.test');
 create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
 grant usage on schema public,auth to anon,authenticated,service_role;grant execute on function auth.uid() to anon,authenticated,service_role;
 alter default privileges in schema public grant all on tables to anon,authenticated;
@@ -19,10 +20,12 @@ create table storage.objects(id uuid primary key default gen_random_uuid(),bucke
 alter table storage.objects enable row level security;grant usage on schema storage to anon,authenticated,service_role;grant all on storage.objects to authenticated,service_role;grant all on storage.buckets to service_role;`);
 for (const file of (await readdir('supabase/migrations')).filter(f=>f.endsWith('.sql')).sort()) await db.exec(await readFile(`supabase/migrations/${file}`,'utf8'));
 for (let n=1;n<=2;n++) {
-  await db.query('insert into auth.users(id) values($1)',[id(n)]);
-  await db.query('insert into public.organizations(id,name) values($1,$2)',[id(100+n),`Fixture museum ${n}`]);
+  await db.query('insert into auth.users(id,email) values($1,$2)',[id(n),users[n-1].email]);
+  await db.query("insert into public.organizations(id,name,approval_status) values($1,$2,'approved')",[id(100+n),`Fixture museum ${n}`]);
   await db.query('insert into public.organization_members(organization_id,user_id,role) values($1,$2,$3)',[id(100+n),id(n),'owner']);
 }
+for(let n=3;n<=5;n++) await db.query('insert into auth.users(id,email) values($1,$2)',[id(n),users[n-1].email]);
+await db.query('insert into private.platform_admins(user_id) values($1)',[id(3)]);
 function session(user) {
   const now=Math.floor(Date.now()/1000);
   const encode=value=>Buffer.from(JSON.stringify(value)).toString('base64url');
@@ -33,10 +36,11 @@ function session(user) {
 }
 const send=(res,status,value,headers={})=>{res.writeHead(status,{'Content-Type':'application/json',...headers});res.end(JSON.stringify(value));};
 const safe=value=>{if(!/^[a-z_]+$/.test(value)) throw new Error('Unsafe identifier');return value;};
-const tables=new Set(['organizations','organization_members','places','place_translations','zones','zone_translations','sensory_profiles','media_assets','guides','guide_steps']);
+const tables=new Set(['organizations','organization_members','places','place_translations','zones','zone_translations','sensory_profiles','media_assets','guides','guide_steps','organization_applications','organization_review_events']);
 createServer(async(req,res)=>{
   try {
     const url=new URL(req.url,'http://127.0.0.1:3012');const chunks=[];for await(const chunk of req) chunks.push(chunk);const body=Buffer.concat(chunks);
+    if(url.pathname==='/__fixture/verification-mode' && req.method==='POST') {verificationEnabled=JSON.parse(body.toString()).enabled;return send(res,200,{verificationEnabled});}
     if (url.pathname==='/health') return send(res,200,{ready:true});
     if (url.pathname==='/auth/v1/token') {
       const payload=JSON.parse(body.toString());const user=url.searchParams.get('grant_type')==='refresh_token'?tokens.get(payload.refresh_token):users.find(u=>u.email===payload.email && payload.password==='Fixture-only-passphrase-123');
@@ -45,7 +49,7 @@ createServer(async(req,res)=>{
     const token=(req.headers.authorization || '').replace(/^Bearer /,'');const user=tokens.get(token);
     if (url.pathname==='/auth/v1/user') return send(res,user?200:401,user || {msg:'Invalid token'});
     if (url.pathname==='/auth/v1/logout') {tokens.delete(token);res.writeHead(204);return res.end();}
-    if (!user && !(url.pathname==='/rest/v1/rpc/workspace_schema_version')) return send(res,401,{code:'42501',message:'Sign in required'});
+    if (!user && !['/rest/v1/rpc/workspace_schema_version','/rest/v1/rpc/organization_verification_schema_version'].includes(url.pathname)) return send(res,401,{code:'42501',message:'Sign in required'});
     await locked(async()=>{
       await db.exec('begin');
       try {
@@ -54,6 +58,10 @@ createServer(async(req,res)=>{
         if (url.pathname.startsWith('/rest/v1/rpc/')) {
           const rpc=url.pathname.split('/').at(-1);let result;
           if(rpc==='workspace_schema_version') result=(await db.query('select public.workspace_schema_version() value')).rows[0].value;
+          else if(rpc==='organization_verification_schema_version') {if(!verificationEnabled) throw new Error('Verification migration unavailable');result=(await db.query('select public.organization_verification_schema_version() value')).rows[0].value;}
+          else if(rpc==='is_platform_admin') result=(await db.query('select public.is_platform_admin() value')).rows[0].value;
+          else if(rpc==='submit_organization_application') {const p=JSON.parse(body.toString());result=(await db.query('select public.submit_organization_application($1::jsonb,$2) value',[JSON.stringify(p.application),p.expected_revision??null])).rows[0].value;}
+          else if(rpc==='review_organization_application') {const p=JSON.parse(body.toString());result=(await db.query('select public.review_organization_application($1,$2,$3,$4,$5,$6,$7,$8) value',[p.application_id,p.expected_revision,p.decision,p.entity_confirmed,p.mandate_confirmed,p.verified_source,p.evidence_reference,p.applicant_note])).rows[0].value;}
           else if(rpc==='save_place_draft') {
             const p=JSON.parse(body.toString());
             result=(await db.query('select public.save_place_draft($1,$2,$3,$4,$5::jsonb) value',[p.org,p.place,p.expected_revision,p.content_locale,JSON.stringify(p.draft)])).rows[0].value;
@@ -64,13 +72,14 @@ createServer(async(req,res)=>{
           const table=url.pathname.split('/').at(-1);if(!tables.has(table) || req.method!=='GET') throw new Error('Unsupported REST request');
           const values=[];const filters=[];
           for(const [key,value] of url.searchParams) {
-            if(['select','order','limit'].includes(key)) continue;
+            if(['select','order','limit','offset'].includes(key)) continue;
             const [op,...rest]=value.split('.');if(!['eq','neq'].includes(op)) throw new Error('Unsupported filter');
             const filterValue=rest.join('.');values.push(filterValue==='true'?true:filterValue==='false'?false:filterValue);filters.push(`${safe(key)} ${op==='eq'?'=':'<>'} $${values.length}`);
           }
           const ordering=(url.searchParams.get('order') || '').split(',').filter(Boolean).map(item=>{const [key,dir]=item.split('.');return `${safe(key)} ${dir==='desc'?'desc':'asc'}`;}).join(',');
           const limit=Math.min(100,Number(url.searchParams.get('limit') || 100));
-          const query=`select * from public.${table}${filters.length?' where '+filters.join(' and '):''}${ordering?' order by '+ordering:''} limit ${limit}`;
+          const offset=Math.max(0,Number(url.searchParams.get('offset')||0));
+          const query=`select * from public.${table}${filters.length?' where '+filters.join(' and '):''}${ordering?' order by '+ordering:''} limit ${limit} offset ${offset}`;
           const rows=(await db.query(query,values)).rows;
           if(table==='places' && url.searchParams.get('select')?.includes('place_translations(')) for(const row of rows) row.place_translations=(await db.query('select name,locale from public.place_translations where place_id=$1',[row.id])).rows;
           for(const row of rows) if(row.photographed_on instanceof Date) row.photographed_on=row.photographed_on.toISOString().slice(0,10);

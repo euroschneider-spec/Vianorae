@@ -6,7 +6,7 @@ export type RecordStatus='draft'|'published'|'archived';
 export type SourceLevel='venue_provided'|'assessor_verified'|'independent_audit';
 export type OrganizationRole='owner'|'admin'|'editor'|'assessor'|'reviewer';
 export type SensoryLevel='unknown'|'low'|'moderate'|'high'|'variable';
-export interface OrganizationRow{id:UUID;name:string;country_code:string|null;organization_type:'institution'|'museum'|'hotel'|'cultural'|'public_service'|'other';status:RecordStatus;created_at:string}
+export interface OrganizationRow{id:UUID;name:string;country_code:string|null;organization_type:'institution'|'museum'|'hotel'|'cultural'|'public_service'|'other';status:RecordStatus;approval_status:'pending'|'approved'|'suspended';created_at:string}
 export interface OrganizationMemberRow{organization_id:UUID;user_id:UUID;role:OrganizationRole;created_at:string}
 export interface PlaceRow{id:UUID;organization_id:UUID;slug:string;country_code:string|null;city:string;address:string;place_type:string;status:RecordStatus;template_id:UUID|null;created_at:string;revision:number;updated_at:string}
 export interface ZoneRow{id:UUID;place_id:UUID;organization_id:UUID;parent_zone_id:UUID|null;type:string;sort_order:number;status:RecordStatus}

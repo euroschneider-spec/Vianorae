@@ -165,6 +165,96 @@ try {
     assert.equal((await context.request.get(`${base}${photoPath}`)).status(),401);
     await page.goto(editUrl);await expect(page).toHaveURL(/\/en\/login$/);
   });
+  const applicantContext=await browser.newContext();const applicant=await applicantContext.newPage();
+  const adminContext=await browser.newContext();const adminPage=await adminContext.newPage();
+  const fillApplication=async()=>{
+    await applicant.getByLabel('Organisation name',{exact:true}).fill('Verified fixture museum');
+    await applicant.getByLabel('Responsible representative',{exact:true}).fill('Fixture director');
+    await applicant.getByLabel('Official website (https://)',{exact:true}).fill('https://museum.example.test');
+    await applicant.getByLabel('Country code (two letters)',{exact:true}).fill('DE');
+    await applicant.getByLabel('Public registry reference (if applicable)',{exact:true}).fill('Fixture register 42');
+    await applicant.getByLabel('Your role in the organisation',{exact:true}).fill('Director');
+    await applicant.getByLabel('How can your authority to represent the organisation be confirmed?',{exact:true}).fill('The registered office can independently confirm the director’s written mandate.');
+    for(const checkbox of await applicant.locator('.organisation-form').getByRole('checkbox').all()) await checkbox.check();
+  };
+  await check('confirmed applicant sees verification form and cannot access the editor',async()=>{
+    await login(applicant,4);await expect(applicant.getByRole('button',{name:'Submit for manual review',exact:true})).toBeVisible();
+    await applicant.goto(`${base}/en/workspace`);await expect(applicant).toHaveURL(/\/en\/account$/);
+    await expect(applicant.getByRole('link',{name:'Organisation workspace',exact:true})).toHaveCount(0);
+    await fillApplication();await applicant.getByRole('button',{name:'Submit for manual review',exact:true}).click();
+    await expect(applicant.getByRole('heading',{name:'Awaiting manual verification',exact:true})).toBeVisible();
+    await expect(applicant.getByRole('button',{name:'Submit for manual review',exact:true})).toHaveCount(0);
+  });
+  await check('ordinary applicants cannot open the platform review queue',async()=>{
+    const response=await applicant.goto(`${base}/en/admin/organisations`);assert.equal(response.status(),404);
+    await applicant.goto(`${base}/en/account`);await expect(applicant.getByRole('heading',{name:'Awaiting manual verification',exact:true})).toBeVisible();
+  });
+  await check('platform administrator sees pending request and manual evidence controls',async()=>{
+    await login(adminPage,3);await adminPage.getByRole('link',{name:'Review organisation requests',exact:true}).click();
+    await expect(adminPage.getByRole('heading',{name:'Verified fixture museum',exact:true})).toBeVisible();
+    await expect(adminPage.getByLabel('Independent mandate confirmation (reference, contact, method and date)',{exact:true})).toHaveJSProperty('required',true);
+    const audit=await new AxeBuilder({page:adminPage}).withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa']).analyze();assert.deepEqual(audit.violations,[]);
+    await adminPage.setViewportSize({width:320,height:800});await adminPage.addStyleTag({content:'html{font-size:200%}'});
+    assert.equal(await adminPage.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);await adminPage.setViewportSize({width:1280,height:900});await adminPage.reload();
+  });
+  await check('incomplete approval is prevented in browser; request for information is recorded',async()=>{
+    await adminPage.getByLabel('Message for the applicant',{exact:true}).fill('Please identify the official contact for confirming your mandate.');
+    await adminPage.getByRole('button',{name:'Record decision',exact:true}).click();
+    await expect(adminPage.getByRole('heading',{name:'Verified fixture museum',exact:true})).toBeVisible();
+    await adminPage.getByLabel('Decision',{exact:true}).selectOption('needs_information');
+    await adminPage.getByRole('button',{name:'Record decision',exact:true}).click();
+    await expect(adminPage.getByRole('heading',{name:'Verified fixture museum',exact:true})).toHaveCount(0);
+    await applicant.goto(`${base}/en/account`);await expect(applicant.getByRole('heading',{name:'More information required',exact:true})).toBeVisible();
+    await expect(applicant.getByText('Please identify the official contact for confirming your mandate.',{exact:true})).toBeVisible();
+  });
+  await check('applicant can resubmit corrections without receiving access',async()=>{
+    await fillApplication();await applicant.getByRole('button',{name:'Submit for manual review',exact:true}).click();
+    await expect(applicant.getByRole('heading',{name:'Awaiting manual verification',exact:true})).toBeVisible();
+    await applicant.goto(`${base}/en/workspace`);await expect(applicant).toHaveURL(/\/en\/account$/);
+  });
+  await check('manual approval with evidence grants organisation editing and keeps audit private',async()=>{
+    await adminPage.goto(`${base}/en/admin/organisations`);
+    await adminPage.getByLabel('Official source checked (URL / registry reference)',{exact:true}).fill('https://registry.example.test/museum-42');
+    await adminPage.getByLabel('Independent mandate confirmation (reference, contact, method and date)',{exact:true}).fill('Fixture mandate confirmed by the independently sourced registered office on 2026-10-07.');
+    await adminPage.getByLabel('Message for the applicant',{exact:true}).fill('Your organisation and representative mandate have been verified.');
+    await adminPage.getByLabel('I independently verified the organisation’s existence and identity.',{exact:true}).check();
+    await adminPage.getByLabel('I independently confirmed this person’s authority to represent the organisation.',{exact:true}).check();
+    await adminPage.getByRole('button',{name:'Record decision',exact:true}).click();
+    await expect(adminPage.getByRole('heading',{name:'Verified fixture museum',exact:true})).toHaveCount(0);
+    await applicant.goto(`${base}/en/account`);await expect(applicant.getByRole('heading',{name:'Organisation access approved',exact:true})).toBeVisible();
+    await expect(applicant.getByText('Fixture mandate confirmed by the independently sourced registered office',{exact:false})).toHaveCount(0);
+    await applicant.getByRole('link',{name:'Organisation workspace',exact:true}).click();
+    await applicant.waitForURL('**/en/workspace');
+    await expect(applicant.getByText('Verified fixture museum',{exact:true})).toBeVisible();
+    await adminPage.goto(`${base}/en/admin/organisations?history=1`);
+    await adminPage.locator('.verification-request details').getByText('Review history (administrators only)',{exact:true}).click();
+    await expect(adminPage.getByText('Fixture mandate confirmed by the independently sourced registered office on 2026-10-07.',{exact:true})).toBeVisible();
+    await adminPage.screenshot({path:'docs/organisation-verification-preview.png',fullPage:true});
+  });
+  await check('suspending an approved organisation removes access without signing the applicant out',async()=>{
+    await adminPage.getByLabel('Message for the applicant',{exact:true}).fill('Access suspended until the representative mandate is reconfirmed.');
+    await adminPage.getByRole('button',{name:'Record decision',exact:true}).click();
+    await applicant.goto(`${base}/en/workspace`);await expect(applicant).toHaveURL(/\/en\/account$/);
+    await expect(applicant.getByRole('heading',{name:'Organisation access suspended',exact:true})).toBeVisible();
+    await expect(applicant.getByRole('link',{name:'Organisation workspace',exact:true})).toHaveCount(0);
+  });
+  for(const locale of ['en','ro','de']) {
+    await check(`${locale.toUpperCase()} request form is accessible and explains manual approval`,async()=>{
+      await applicant.goto(`${base}/${locale}/register`);
+      const audit=await new AxeBuilder({page:applicant}).withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa']).analyze();assert.deepEqual(audit.violations,[]);
+      await applicant.setViewportSize({width:320,height:800});await applicant.addStyleTag({content:'html{font-size:200%}'});
+      assert.equal(await applicant.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);await applicant.setViewportSize({width:1280,height:900});
+    });
+  }
+  await check('missing verification migration fails closed for registration, workspace and photos',async()=>{
+    await login(page,1);await fetch('http://127.0.0.1:3012/__fixture/verification-mode',{method:'POST',body:JSON.stringify({enabled:false})});
+    try {
+      await page.goto(`${base}/en/register`);await expect(page.getByRole('button',{name:'Request organisation access',exact:true})).toBeDisabled();
+      await page.goto(editUrl);await expect(page).toHaveURL(/\/en\/account$/);
+      await expect(page.getByText('Organisation verification is being activated.',{exact:false})).toBeVisible();
+      assert.equal((await context.request.get(`${base}${photoPath}`)).status(),401);
+    } finally {await fetch('http://127.0.0.1:3012/__fixture/verification-mode',{method:'POST',body:JSON.stringify({enabled:true})});}
+  });
   console.log(`${checks} online workspace checks passed (real migrations; simulated Auth/Storage HTTP).`);
 } finally {
   if(browser) await browser.close();for(const child of children) if(child.exitCode===null) child.kill('SIGTERM');

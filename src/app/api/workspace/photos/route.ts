@@ -1,4 +1,5 @@
 import sharp from 'sharp';
+import { verificationReady, approvedOrganization } from '@/lib/verification-server';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { workspaceConfigured } from '@/lib/workspace-server';
@@ -11,7 +12,7 @@ async function session() {
   if(!workspaceConfigured()) return null;
   const supabase=await createClient();
   const {data:{user},error}=await supabase.auth.getUser();
-  return error || !user || !user.email_confirmed_at || user.is_anonymous ? null : supabase;
+  return error || !user || !user.email_confirmed_at || user.is_anonymous || !await verificationReady(supabase) ? null : supabase;
 }
 export async function POST(request:Request) {
   try {
@@ -20,7 +21,7 @@ export async function POST(request:Request) {
     const data=await request.formData();const zoneId=String(data.get('zoneId') || '');const placeId=String(data.get('placeId') || '');const file=data.get('file');
     if(!uuidPattern.test(zoneId) || !uuidPattern.test(placeId) || !(file instanceof File) || file.type!=='image/webp' || file.size===0 || file.size>MAX_ONLINE_PHOTO) return failure(400);
     const zone=await supabase.from('zones').select('id,place_id,organization_id').eq('id',zoneId).eq('place_id',placeId).neq('status','archived').maybeSingle();
-    if(zone.error || !zone.data) return failure(404);
+    if(zone.error || !zone.data || !await approvedOrganization(supabase,zone.data.organization_id)) return failure(404);
     const input=Buffer.from(await file.arrayBuffer());
     if(input.toString('ascii',0,4)!=='RIFF' || input.toString('ascii',8,12)!=='WEBP') return failure(400);
     // Decode and re-encode on the server too: clients cannot bypass metadata stripping.
@@ -39,6 +40,7 @@ export async function GET(request:Request) {
     const supabase=await session();if(!supabase) return failure(401);
     const key=new URL(request.url).searchParams.get('key') || '';const parts=key.split('/');
     if(parts.length!==4 || !parts.slice(0,3).every(p=>uuidPattern.test(p)) || !uuidPattern.test(parts[3].replace(/\.webp$/,'')) || !parts[3].endsWith('.webp')) return failure(404);
+    if(!await approvedOrganization(supabase,parts[0])) return failure(404);
     const zone=await supabase.from('zones').select('id').eq('organization_id',parts[0]).eq('place_id',parts[1]).eq('id',parts[2]).neq('status','archived').maybeSingle();
     if(zone.error || !zone.data) return failure(404);
     const image=await supabase.storage.from(PHOTO_BUCKET).download(key);if(image.error || !image.data) return failure(404);

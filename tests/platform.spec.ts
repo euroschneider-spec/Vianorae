@@ -70,11 +70,11 @@ test('publication review requires a saved version and explicit acknowledgements;
 test('registration is discoverable and inactive without the separate auth configuration',async({page})=>{
  const posts:string[]=[];page.on('request',request=>{if(request.method()==='POST')posts.push(request.url());});
  await page.goto('/ro');await page.locator('.account-link').click();await expect(page).toHaveURL(/\/ro\/register$/);
- await expect(page.getByRole('heading',{name:'Creează un cont de organizație'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Solicită acces pentru organizație'})).toBeVisible();
  await expect(page.getByText('Organizația ta își asumă întreaga responsabilitate',{exact:false})).toBeVisible();
  await expect(page.getByLabel('Tipul organizației')).toContainText('Hotel');
  await expect(page.getByLabel('Parolă',{exact:true})).toBeDisabled();
- await expect(page.getByRole('button',{name:'Creează un cont de organizație'})).toBeDisabled();await page.screenshot({path:'docs/registration-preview.png',fullPage:true});
+ await expect(page.getByRole('button',{name:'Solicită acces pentru organizație'})).toBeDisabled();await page.screenshot({path:'docs/registration-preview.png',fullPage:true});
  await page.goto('/ro/login');await expect(page.getByRole('button',{name:'Autentificare',exact:true})).toBeDisabled();
  expect(posts).toEqual([]);
 });
