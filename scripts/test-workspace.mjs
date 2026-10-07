@@ -80,7 +80,7 @@ try {
     assert.match((await context.request.get(page.url())).headers()['cache-control'],/private.*no-store/);
   });
   await check('private preview offers reading controls and narrates only saved organisation content',async()=>{
-    await expect(page.locator('.guide-reading')).toBeVisible();
+    await expect(page.locator('.floating-reading')).toBeVisible();
     await page.evaluate(()=>{
       let current=null;const spoken=[];
       Object.defineProperty(window,'__privateSpeech',{value:{spoken,finish:()=>{let count=0;while(current&&count++<100){const next=current;current=null;next.onend?.({});}}},configurable:true});

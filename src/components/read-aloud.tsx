@@ -11,7 +11,7 @@ type State='idle'|'playing'|'paused'|'finished'|'error'|'missingVoice';
 function pageText():string {
   const main=document.querySelector('main')?.cloneNode(true) as HTMLElement|undefined;
   if(!main) return '';
-  main.querySelectorAll('button,nav,input,select,textarea,script,style,[hidden],[aria-hidden="true"],[role="status"],.read-aloud,.media-tools').forEach(node=>node.remove());
+  main.querySelectorAll('button,nav,input,select,textarea,script,style,[hidden],[aria-hidden="true"],[role="status"],.read-aloud').forEach(node=>node.remove());
   main.querySelectorAll('img').forEach(img=>img.replaceWith(document.createTextNode(img.alt)));
   // Preserve boundaries between headings, paragraphs and list entries.
   main.querySelectorAll('p,h1,h2,h3,h4,li,dt,dd').forEach(node=>node.append(document.createTextNode('\n')));

@@ -2,7 +2,7 @@
 
 ## Verified flows
 
-Public EN/RO/DE pages, the fictional account-free Museum guide, QR navigation, reading preferences and browser-local demonstration editing remain covered by 45 Playwright scenarios, including nine reading-panel/text checks and seven optional-speech/visibility checks. Real signup, email confirmation and first-owner organisation creation in the dedicated Vercel/Supabase preview were confirmed separately by the project owner.
+Public EN/RO/DE pages, the fictional account-free Museum guide, QR navigation, reading preferences and browser-local demonstration editing remain covered by 47 Playwright scenarios, including eleven reading-panel/text checks and seven optional-speech/visibility checks. Real signup, email confirmation and first-owner organisation creation in the dedicated Vercel/Supabase preview were confirmed separately by the project owner.
 
 The online workspace is tested through the production Next.js server with two fictitious verified owners and separate organisations. The application uses its actual SSR cookies, server actions, image API and all four database migrations. An isolated PGlite PostgreSQL database enforces real RLS and constraints. Test-only Auth and Storage HTTP fixtures run on loopback; no real accounts, emails, files or application rows are created remotely. These are full local application-flow checks, not hosted Supabase service tests.
 
@@ -15,7 +15,7 @@ The online workspace is tested through the production Next.js server with two fi
 | Next.js production build | PASS with missing configuration and with explicit workspace fixture configuration |
 | Deployment packaging | PASS; all runtime source/assets and build inputs retained, root tooling excluded |
 | Database checks | PASS; 42 SQL security, consent, atomic save, conflict, translation and Storage-policy scenarios |
-| Public/demo browser scenarios | PASS; 45 scenarios: 29 existing regressions, 9 reading/text checks and 7 speech/visibility checks |
+| Public/demo browser scenarios | PASS; 47 scenarios: 29 existing regressions, 11 reading/text checks and 7 speech/visibility checks |
 | Online workspace flow | PASS; all 20 scenarios |
 | Production dependency audit | PASS; 0 reported vulnerabilities |
 
@@ -27,7 +27,7 @@ Existing browser checks also cover corrupt browser data, locale separation, publ
 
 ## Reading and sound-independent access
 
-A labeled control area is now outside, left of hero/guide images on desktop and above them on mobile, also in online draft previews. The reading panel remains available from the header. EN/RO/DE checks exercise keyboard opening, cyclic Tab focus, Escape/close and focus return, native modal semantics, theme controls, axe WCAG A/AA, and resize/reflow at 320px with 200% text. An initial test exposed a resize-event timing gap; the panel now repositions when its open-state effect runs as well as on resize.
+A single fixed launcher and nonmodal popup replace the header duplicate and permanent media column. EN/RO/DE checks exercise initial focus, Escape, return focus, readable preferences, axe WCAG A/AA and 320px/200% reflow. Desktop browser-wheel checks confirm that the page scrolls while both the open popup and launcher retain their screen coordinates. Additional checks cover drag/arrow-key/single-click movement, reset, resize bounds, Tab leaving the popup and outside-click focus preservation.
 
 Complete text mode includes all five steps, sensory labels, useful notes, next instructions and general/provenance information. It works without audio/video/images, reads the saved local draft, and retains the current step when returning to step-by-step mode. All instructions and messages are written on screen. No recorded audio/video files are present; optional synthetic speech reads the same visible text; future media requirements are documented in `ACCESSIBILITY.md`. No database migration was required.
 
@@ -57,7 +57,7 @@ Run the demo checks first: the workspace command deliberately builds with fictit
 
 ## Evidence
 
-`home-preview.png`, `mobile-preview.png`, `guide-preview.png`, `workspace-preview.png`, `builder-photo-preview.png` and `registration-preview.png` cover the public/local foundation. `reading-panel-preview.png` and `text-guide-preview.png` show the new localized reading/text views. `media-controls-preview.png` and `audio-guide-preview.png` show the separate control area and optional voice controls. `online-builder-preview.png` shows the authenticated editor with entirely fictitious local-fixture data.
+`home-preview.png`, `mobile-preview.png`, `guide-preview.png`, `workspace-preview.png`, `builder-photo-preview.png` and `registration-preview.png` cover the public/local foundation. `reading-panel-preview.png` and `text-guide-preview.png` show the new localized reading/text views. `media-controls-preview.png` and `audio-guide-preview.png` show the fixed popup and optional voice controls. `online-builder-preview.png` shows the authenticated editor with entirely fictitious local-fixture data.
 
 ## Packaging regression
 

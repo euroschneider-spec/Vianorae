@@ -4,7 +4,11 @@ This implementation concerns access to VIANORAE itself. Venue noise levels remai
 
 The current site contains no audio/video media and no essential audio-only instructions or notifications. Guide instructions, step counts, navigation, sensory levels, confirmation and error messages are written on screen. Messages do not disappear on an automatic timer. The public/demo guide additionally offers a complete text view containing every step, useful note, next instruction, sensory label, arrival information and provenance without images, playback or time limits. Switching back retains the current step. Saved local drafts feed both guide views; this is not a new dataset or translation.
 
-A shared native dialog replaces the footer-only reading settings. A permanently visible labeled control area sits outside, to the left of hero/guide images on desktop and above them on mobile; private online draft photos use the same controls. Header access remains available on other pages. It opens on user request, keeps the background inert and cycles Tab focus within the panel, closes with Escape/close/backdrop, and returns focus to its opener. Text size, spacing and appearance use the existing local preference key; no disability profile is collected. The panel stays within the viewport after resizing and scrolls at enlarged text sizes.
+A single fixed, labeled launcher opens a native nonmodal reading popup. There is no second header control or permanent media sidebar. On desktop, the launcher and popup initially align to the left of the page's first guide/hero/draft image, within the viewport. On mobile, a compact fixed launcher stays available and the popup is clamped to the screen. Both keep their screen position while the page scrolls; no scroll handler reanchors them.
+
+The background remains usable and scrolling is not locked. Opening focuses the text-size selector. Tab can leave the popup; Escape works inside or outside, and explicit close returns focus to the launcher. Outside clicks close without stealing focus from the clicked control. Changing routes closes the popup. Its own content scrolls at enlarged text sizes.
+
+The handle supports pointer dragging, arrow-key movement and Home to reset. Clicking the handle reveals four single-click movement buttons and reset, providing a pointer alternative to dragging. Positions are clamped on move, resize and popup-content resize. Text size, spacing and appearance retain the existing local preference key; no disability profile is collected.
 
 ## Optional read aloud
 

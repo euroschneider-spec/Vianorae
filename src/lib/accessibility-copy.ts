@@ -1,5 +1,6 @@
 import type { Locale } from './i18n';
 const en={
+  movePanel:'Move reading panel',moveLeft:'Move left',moveRight:'Move right',moveUp:'Move up',moveDown:'Move down',resetPosition:'Reset panel position',popupHint:'You can scroll with this panel open. Drag the handle or click it for movement buttons; arrow keys also move the panel.',
   tools:'Reading & audio',openSettings:'Open the panel to adjust the text or listen to this page.',
   listenPage:'Listen to this page',listenGuide:'Listen to the complete guide',listenStep:'Listen to this step',
   audioIntro:'Optional spoken text. No autoplay. Voices depend on your browser and device; some need an internet connection.',
@@ -17,6 +18,7 @@ const en={
 };
 type AccessCopy={ [K in keyof typeof en]:string };
 const ro:AccessCopy={
+  movePanel:'Mută panoul de lectură',moveLeft:'Mută la stânga',moveRight:'Mută la dreapta',moveUp:'Mută în sus',moveDown:'Mută în jos',resetPosition:'Resetează poziția panoului',popupHint:'Poți derula pagina cu panoul deschis. Trage de mâner sau apasă-l pentru butoanele de mutare; poți folosi și tastele săgeată.',
   tools:'Lectură și audio',openSettings:'Deschide panoul pentru a ajusta textul sau a asculta pagina.',
   listenPage:'Ascultă pagina',listenGuide:'Ascultă ghidul complet',listenStep:'Ascultă acest pas',
   audioIntro:'Text citit cu voce, opțional. Fără pornire automată. Vocile depind de browser și dispozitiv; unele necesită internet.',
@@ -33,6 +35,7 @@ const ro:AccessCopy={
   photoDescription:'Descrierea fotografiei',
 };
 const de:AccessCopy={
+  movePanel:'Lesepanel verschieben',moveLeft:'Nach links verschieben',moveRight:'Nach rechts verschieben',moveUp:'Nach oben verschieben',moveDown:'Nach unten verschieben',resetPosition:'Panelposition zurücksetzen',popupHint:'Sie können bei geöffnetem Panel scrollen. Ziehen Sie am Griff oder klicken Sie ihn für Verschiebebuttons an; auch die Pfeiltasten bewegen das Panel.',
   tools:'Lesen und Audio',openSettings:'Öffnen Sie das Panel, um den Text anzupassen oder die Seite anzuhören.',
   listenPage:'Diese Seite anhören',listenGuide:'Den vollständigen Guide anhören',listenStep:'Diesen Schritt anhören',
   audioIntro:'Optionale Sprachausgabe ohne Autoplay. Stimmen hängen von Browser und Gerät ab; manche benötigen Internet.',
