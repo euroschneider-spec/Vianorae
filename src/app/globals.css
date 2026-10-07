@@ -40,8 +40,8 @@ fieldset{min-width:0;max-width:100%}legend{max-width:100%;overflow-wrap:anywhere
 /* Reading controls sit beside media; the native modal keeps keyboard focus inside. */
 .reading-trigger{width:48px;height:48px;min-width:48px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:50%;background:var(--surface);color:var(--ink);box-shadow:0 3px 12px #0001}
 .reading-trigger:hover{background:var(--green-soft)}
-.hero-reading{position:absolute;left:0;top:85px;z-index:3}
-.guide-media{position:relative}.guide-reading{position:absolute;left:12px;top:12px;z-index:2}
+.hero-media-layout{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;align-items:start;min-width:0}.hero-media-layout .hero-visual{padding:0;min-width:0}.hero-media-layout .preview-card{transform:none}
+.guide-media{display:grid;grid-template-columns:180px minmax(0,1fr);gap:16px;align-items:start;padding:16px;min-width:0}.guide-media .guide-image{border-radius:6px}
 .reading-dialog{margin:0;position:fixed;top:min(10vh,72px);bottom:auto;width:min(360px,calc(100vw - 32px));max-width:calc(100vw - 32px);max-height:calc(100dvh - min(10vh,72px) - 16px);overflow:auto;padding:24px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);box-shadow:0 12px 44px #0003;overscroll-behavior:contain}
 .reading-dialog[open]{display:grid;gap:18px}.reading-dialog::backdrop{background:#0005}
 .reading-dialog-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.reading-dialog-heading h2{font-size:1.35rem;line-height:1.35;margin:0;overflow-wrap:anywhere}.reading-dialog-heading button{flex-shrink:0}
@@ -51,8 +51,12 @@ fieldset{min-width:0;max-width:100%}legend{max-width:100%;overflow-wrap:anywhere
 .guide-text-view{padding:28px 32px;background:var(--surface);border:1px solid var(--line);border-radius:10px}.guide-text-view>h2{font-family:Georgia,serif;font-size:2rem;line-height:1.25}
 .guide-text-steps{list-style:none;padding:0;margin:0}.guide-text-steps>li{border-top:1px solid var(--line);padding-top:24px;margin-top:24px}.guide-text-steps h3{font-family:Georgia,serif;font-size:1.5rem;line-height:1.3}.guide-text-steps h4{font-size:1rem;margin-bottom:8px}.guide-text-steps .eyebrow{margin-bottom:12px}
 .guide-info-text{padding:20px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}.guide-info-text h3{font-size:1rem}.guide-info-text p{margin-bottom:0}
-@media(max-width:760px){.reading-trigger{width:44px;height:44px;min-width:44px}.header-reading{box-shadow:none}.hero-reading{left:4px;top:64px}.guide-text-view{padding:22px 18px}}
+@media(max-width:760px){.reading-trigger{width:44px;height:44px;min-width:44px}.header-reading{box-shadow:none}.hero-media-layout,.guide-media{grid-template-columns:minmax(0,1fr)}.guide-text-view{padding:22px 18px}}
 @media print{.reading-trigger,.reading-dialog,.guide-display{display:none!important}.guide-text-view{border:0;padding:0}.guide-text-steps>li{break-inside:avoid}}
 .reading-dialog .form-field{min-width:0}.reading-dialog label{overflow-wrap:anywhere}
 .hero-reading,.guide-reading{width:auto;height:auto;min-height:48px;max-width:calc(100% - 24px);padding:10px 12px;gap:8px;border-radius:8px;line-height:1.4}
 .hero-reading span,.guide-reading span{min-width:0;overflow-wrap:anywhere;font-size:.78rem;font-weight:600}
+
+.media-tools{padding:16px;border:1px solid var(--line);border-radius:8px;background:var(--surface);min-width:0}.media-tools-title{font-size:.85rem;font-weight:700;color:var(--ink);margin-bottom:12px}.media-tools-hint{font-size:.78rem;margin:12px 0 0;overflow-wrap:anywhere}.media-tools .reading-trigger{max-width:100%;width:100%;position:static;justify-content:flex-start;box-shadow:none}.media-tools .reading-trigger span{overflow-wrap:anywhere}
+.read-aloud{border:1px solid var(--line);border-radius:8px;padding:18px;background:var(--surface);min-width:0;margin-top:16px}.read-aloud h3{font-size:1rem;margin-bottom:8px}.read-aloud .button-row{gap:10px}.read-aloud .button{padding:10px 14px;min-height:44px}.read-aloud button:disabled{opacity:.6;cursor:default}.audio-rate{margin-top:14px;max-width:210px}.audio-status{font-size:.85rem;margin:12px 0 0}.reading-dialog .read-aloud{margin:0;padding:14px}.reading-dialog .read-aloud .small-note{margin-bottom:12px}.reading-dialog .audio-status{margin-top:12px}
+@media print{.media-tools,.read-aloud{display:none!important}.hero-media-layout,.guide-media{display:block}}

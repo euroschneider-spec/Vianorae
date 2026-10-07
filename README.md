@@ -32,6 +32,7 @@ npm run start
 - Versioned, validated browser-local drafts, separated by language. Public demo data remains fixed.
 - Stable `/q/willow-museum` redirect and QR SVG at `/api/qr/willow-museum`.
 - Reading preferences in a keyboard-accessible panel beside guide/hero images and in the header: text size, light/dark/high contrast, text spacing, reset and reduced-motion support.
+- Optional browser read-aloud for pages, guide steps, complete guides and private online previews, with pause/resume/stop and speed. Matching EN/RO/DE voices depend on the device; no autoplay or paid TTS service.
 - Sound-independent instructions/messages and a complete text view of every public/demo guide, with all steps, sensory labels and visit information.
 - Four Supabase migrations, 24 RLS-protected public tables, relational tenant constraints, immutable guide snapshots, audit records and pilot provenance structures.
 - Fictional local SQL seed, schema/domain types, automated checks and GitHub Actions workflow.

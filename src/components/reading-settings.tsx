@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { SlidersHorizontal, X } from 'lucide-react';
 import { getCopy, type Locale } from '@/lib/i18n';
 import { getAccessCopy } from '@/lib/accessibility-copy';
+import { ReadAloud } from './read-aloud';
 
 type Preferences={size:'normal'|'large'|'larger';theme:'light'|'dark'|'contrast';spacing:boolean};
 const defaults:Preferences={size:'normal',theme:'light',spacing:false};
@@ -64,6 +65,7 @@ export function ReadingSettingsProvider({locale,children}:{locale:Locale;childre
       <label className="checkbox-label"><input type="checkbox" checked={prefs.spacing} onChange={e=>update({...prefs,spacing:e.target.checked})}/>{t.spacing}</label>
       <p className="notice reading-sound-note">{a.withoutSound}</p>
       <button type="button" className="text-button" onClick={()=>update(defaults)}>{t.reset}</button>
+      <ReadAloud locale={locale} label={a.listenPage} enabled={isOpen}/>
     </dialog>
   </ReadingContext.Provider>;
 }

@@ -79,6 +79,19 @@ try {
     await expect(page.getByRole('img',{name:'Fictional green entrance illustration'})).toBeVisible();
     assert.match((await context.request.get(page.url())).headers()['cache-control'],/private.*no-store/);
   });
+  await check('private preview offers reading controls and narrates only saved organisation content',async()=>{
+    await expect(page.locator('.guide-reading')).toBeVisible();
+    await page.evaluate(()=>{
+      let current=null;const spoken=[];
+      Object.defineProperty(window,'__privateSpeech',{value:{spoken,finish:()=>{let count=0;while(current&&count++<100){const next=current;current=null;next.onend?.({});}}},configurable:true});
+      Object.defineProperty(window,'speechSynthesis',{value:{getVoices:()=>[{lang:'en-GB',name:'Fixture English',default:true,localService:true,voiceURI:'fixture'}],speak:utterance=>{current=utterance;spoken.push(utterance.text);},cancel:()=>{current=null;},pause:()=>{},resume:()=>{}},configurable:true});
+      Object.defineProperty(window,'SpeechSynthesisUtterance',{value:class{constructor(text){this.text=text;}},configurable:true});
+    });
+    const audio=page.locator('main .read-aloud');await audio.getByRole('button',{name:'Read aloud',exact:true}).click();
+    await page.evaluate(()=>window.__privateSpeech.finish());await expect(audio.getByRole('status')).toHaveText('Reading finished.');
+    const spoken=await page.evaluate(()=>window.__privateSpeech.spoken.join('\n'));
+    assert.match(spoken,/Fixture Gallery/);assert.match(spoken,/A step-free entrance, checked by the venue/);assert.match(spoken,/Fictional green entrance illustration/);assert.match(spoken,/Sound: Moderate/);assert.doesNotMatch(spoken,/Willow Museum|Willow Square/);
+  });
   const second=await browser.newContext();const secondPage=await second.newPage();await login(secondPage);await secondPage.goto(editUrl);
   await check('a separate browser session sees the saved draft and photo',async()=>{
     await expect(secondPage.getByLabel('Zone title',{exact:true})).toHaveValue('Main entrance');
