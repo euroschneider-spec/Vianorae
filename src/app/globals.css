@@ -25,3 +25,14 @@ html[data-theme=dark] .eyebrow,html[data-theme=dark] .status-message{color:#bdd9
 @media(max-width:760px){.photo-editor,.responsibility-notice,.publication-review,.organisation-form fieldset{padding:18px}.account-link{min-width:34px}.header-actions{gap:2px}}
 fieldset{min-width:0;max-width:100%}legend{max-width:100%;overflow-wrap:anywhere}.responsibility-notice p,.responsibility-notice li,.commitment{overflow-wrap:anywhere}
 .page-heading p{overflow-wrap:anywhere}
+/* Authenticated organisation workspace */
+.online-fields{border:0;padding:0;margin:0;min-width:0}
+.online-fields>legend{font-weight:650;font-size:1.25rem;margin-bottom:1.5rem}
+.workspace-locations{list-style:none;padding:0;margin:2rem 0;display:grid;gap:1.25rem}
+.workspace-location{border:1px solid var(--line);border-radius:8px;padding:1.5rem;background:var(--surface)}
+.workspace-location h2{font-size:1.3rem;margin-top:0}
+.zone-order{margin-bottom:1.25rem}
+.draft-sensory{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,9rem),1fr));gap:1rem;margin:1.5rem 0}
+.draft-sensory dt{font-weight:650}
+.draft-sensory dd{margin:.3rem 0 0}
+.preserve-lines{white-space:pre-line}

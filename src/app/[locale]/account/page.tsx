@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/server';
 import { signOut } from '@/app/auth/actions';
 import { OrganisationForm } from '@/components/organisation-form';
 import { ResponsibilityNotice } from '@/components/responsibility-notice';
+import { workspaceConfigured } from '@/lib/workspace-server';
+import { getWorkspaceCopy } from '@/lib/workspace';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Organisation account', robots: { index: false, follow: false } };
@@ -26,7 +28,7 @@ export default async function Account({ params }: { params: Promise<{ locale: st
   };
   return <main id="main-content" className="container"><div className="page-heading"><h1>{memberships?.length ? t.account : t.onboarding}</h1></div><div className="content-body">
     <ResponsibilityNotice locale={locale}/>
-    {memberships?.length ? <><ul>{memberships.map(organisation => <li key={organisation.id}>{organisation.name}</li>)}</ul><p className="notice">{t.liveBoundary}</p><Link className="button button-outline" href={`/${locale}/dashboard`}>{getCopy(locale).openWorkspace}</Link></> : <OrganisationForm locale={locale} mode="onboard" enabled initial={initial}/>}
+    {memberships?.length ? <><ul>{memberships.map(organisation => <li key={organisation.id}>{organisation.name}</li>)}</ul>{workspaceConfigured() ? <><p className="notice">{getWorkspaceCopy(locale).boundary}</p><Link className="button" href={`/${locale}/workspace`}>{getWorkspaceCopy(locale).workspace}</Link></> : <p className="notice">{t.liveBoundary}</p>}<Link className="button button-outline" href={`/${locale}/dashboard`}>{getCopy(locale).openWorkspace}</Link></> : <OrganisationForm locale={locale} mode="onboard" enabled initial={initial}/>}
     <form action={signOut.bind(null,locale)}><button className="text-button" type="submit">{t.signOut}</button></form>
   </div></main>;
 }

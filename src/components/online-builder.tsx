@@ -1,0 +1,93 @@
+'use client';
+
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { getCopy, localeNames, type Locale } from '@/lib/i18n';
+import { getOrganisationCopy } from '@/lib/organisation-copy';
+import { getWorkspaceCopy, newZone, parsePlaceDraft, placeTypes, sensoryChannels, sensoryLevels, type PlaceDraft, type OnlineZone, type OnlinePhoto } from '@/lib/workspace';
+import { savePlaceDraft } from '@/app/workspace/actions';
+import { ResponsibilityNotice } from './responsibility-notice';
+import { OnlinePhotoEditor } from './online-photo';
+
+export function OnlineBuilder({locale,org,initial,persistedZoneIds,missingTranslation=false}: {
+  locale:Locale;org:string;initial:PlaceDraft;persistedZoneIds:string[];missingTranslation?:boolean;
+}) {
+  const t=getWorkspaceCopy(locale);const common=getCopy(locale);const o=getOrganisationCopy(locale);const router=useRouter();
+  const [draft,setDraft]=useState(initial);const [dirty,setDirty]=useState(false);const [pending,setPending]=useState(false);
+  const [persisted,setPersisted]=useState(new Set(persistedZoneIds));const [busyPhotos,setBusyPhotos]=useState(new Set<string>());
+  const [message,setMessage]=useState(initial.revision>0?t.saved:'');const [error,setError]=useState<'auth'|'conflict'|'other'|null>(null);
+  const disabled=pending || busyPhotos.size>0;
+  useEffect(()=>{
+    if(!dirty) return;
+    const beforeUnload=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue='';};
+    const beforeLink=(event:MouseEvent)=>{
+      if(event.button!==0 || event.ctrlKey || event.metaKey || event.shiftKey || !(event.target instanceof Element)) return;
+      const link=event.target.closest<HTMLAnchorElement>('a[href]');
+      if(!link || link.target==='_blank' || link.hasAttribute('download') || new URL(link.href).pathname===window.location.pathname) return;
+      if(!window.confirm(t.discard)){event.preventDefault();event.stopPropagation();}
+    };
+    window.addEventListener('beforeunload',beforeUnload);document.addEventListener('click',beforeLink,true);
+    return()=>{window.removeEventListener('beforeunload',beforeUnload);document.removeEventListener('click',beforeLink,true);};
+  },[dirty,t.discard]);
+  function change(update:(current:PlaceDraft)=>PlaceDraft){setDraft(update);setDirty(true);setMessage('');setError(null);}
+  function field<K extends keyof Omit<PlaceDraft,'id'|'revision'|'zones'>>(key:K,value:PlaceDraft[K]){change(current=>({...current,[key]:value}));}
+  function zoneField(index:number,update:(zone:OnlineZone)=>OnlineZone){change(current=>({...current,zones:current.zones.map((zone,i)=>i===index?update(zone):zone)}));}
+  function photoBusy(id:string,busy:boolean){setBusyPhotos(current=>{const next=new Set(current);if(busy) next.add(id);else next.delete(id);return next;});}
+  function move(index:number,offset:number){change(current=>{const zones=[...current.zones];[zones[index],zones[index+offset]]=[zones[index+offset],zones[index]];return {...current,zones};});}
+  async function save(event:React.FormEvent<HTMLFormElement>){
+    event.preventDefault();if(disabled) return;
+    if(!parsePlaceDraft(draft,org)){setMessage(t.invalid);setError('other');return;}
+    setPending(true);setMessage(t.saving);setError(null);
+    try {
+      const result=await savePlaceDraft(org,locale,draft);
+      if(!result.ok){setError(result.error==='conflict'?'conflict':result.error==='auth'?'auth':'other');setMessage(result.error==='conflict'?t.conflict:result.error==='invalid'?t.invalid:t.error);return;}
+      setDraft(current=>({...current,revision:result.revision}));setPersisted(new Set(draft.zones.map(z=>z.id)));setDirty(false);setMessage(t.saved);
+      if(initial.revision===0) router.replace(`/${locale}/workspace/${draft.id}`);
+    } catch {setError('other');setMessage(t.error);}
+    finally {setPending(false);}
+  }
+  return <>
+    <p className="eyebrow">{t.language}: {localeNames[locale]}</p>
+    <p className="notice">{t.boundary}</p><p>{t.shared}</p>
+    {missingTranslation && <p className="notice">{t.missing}</p>}
+    <ResponsibilityNotice locale={locale} compact/>
+    <form onSubmit={save} aria-label={t.edit}>
+      <fieldset className="online-fields" disabled={disabled}>
+        <legend>{t.edit}</legend>
+        <div className="form-grid">
+          <label className="form-field wide">{t.location}<input name="location-name" required maxLength={160} value={draft.name} onChange={e=>field('name',e.target.value)}/></label>
+          <label className="form-field">{t.city}<input required maxLength={160} value={draft.city} onChange={e=>field('city',e.target.value)}/></label>
+          <label className="form-field">{t.country}<input maxLength={2} pattern="[A-Z]{2}|^$" value={draft.countryCode} onChange={e=>field('countryCode',e.target.value.toUpperCase())} aria-describedby="country-code-hint"/><small id="country-code-hint">{t.countryHint}</small></label>
+          <label className="form-field wide">{t.address}<input maxLength={500} value={draft.address} onChange={e=>field('address',e.target.value)}/></label>
+          <div className="form-field"><label htmlFor="online-place-kind">{t.kind}</label><select id="online-place-kind" value={draft.placeType} onChange={e=>field('placeType',e.target.value as PlaceDraft['placeType'])}>{placeTypes.map((kind,i)=><option key={kind} value={kind}>{o.types[i]}</option>)}</select></div>
+          <div className="form-field wide"><label htmlFor="online-description">{t.summary}</label><textarea id="online-description" rows={2} maxLength={2000} value={draft.description} onChange={e=>field('description',e.target.value)}/></div>
+          <div className="form-field wide"><label htmlFor="online-arrivalInfo">{t.arrival}</label><textarea id="online-arrivalInfo" rows={3} maxLength={2000} value={draft.arrivalInfo} onChange={e=>field('arrivalInfo',e.target.value)}/></div>
+        </div>
+        {draft.zones.map((zone,index)=><section className="builder-zone" key={zone.id} aria-labelledby={`online-zone-${zone.id}`}>
+          <h2 id={`online-zone-${zone.id}`}>{common.step} {index+1}{zone.title?` · ${zone.title}`:''}</h2>
+          <div className="button-row zone-order"><button type="button" className="text-button" disabled={disabled || index===0} onClick={()=>move(index,-1)} aria-label={`${t.up}: ${zone.title || index+1}`}>{t.up}</button>
+            <button type="button" className="text-button" disabled={disabled || index===draft.zones.length-1} onClick={()=>move(index,1)} aria-label={`${t.down}: ${zone.title || index+1}`}>{t.down}</button>
+            <button type="button" className="text-button" disabled={disabled || draft.zones.length===1} onClick={()=>change(current=>({...current,zones:current.zones.filter(z=>z.id!==zone.id)}))} aria-label={`${t.removeZone}: ${zone.title || index+1}`}>{t.removeZone}</button></div>
+          <div className="form-grid">
+            <label className="form-field wide">{common.zoneName}<input required maxLength={160} value={zone.title} onChange={e=>zoneField(index,z=>({...z,title:e.target.value}))}/></label>
+            <div className="form-field wide"><label htmlFor={`online-description-${zone.id}`}>{common.description}</label><textarea id={`online-description-${zone.id}`} required rows={3} maxLength={2000} value={zone.description} onChange={e=>zoneField(index,z=>({...z,description:e.target.value}))}/></div>
+          </div>
+          <OnlinePhotoEditor zone={zone} placeId={draft.id} locale={locale} persisted={persisted.has(zone.id)} disabled={disabled} onBusy={busy=>photoBusy(zone.id,busy)} onChange={(photo?:OnlinePhoto)=>zoneField(index,z=>({...z,photo}))}/>
+          <fieldset className="sensory-fields"><legend>{locale==='ro'?'Profil senzorial':locale==='de'?'Sensorisches Profil':'Sensory profile'}</legend>
+            {sensoryChannels.map(channel=><div className="form-field" key={channel}><label htmlFor={`online-${zone.id}-${channel}`}>{common[channel]}</label><select id={`online-${zone.id}-${channel}`} value={zone.sensory[channel]} onChange={e=>zoneField(index,z=>({...z,sensory:{...z.sensory,[channel]:e.target.value}}))}>{sensoryLevels.map(level=><option key={level} value={level}>{common[level]}</option>)}</select></div>)}
+          </fieldset>
+          <div className="form-field"><label htmlFor={`online-note-${zone.id}`}>{common.note}</label><textarea id={`online-note-${zone.id}`} rows={2} maxLength={2000} value={zone.note} onChange={e=>zoneField(index,z=>({...z,note:e.target.value}))}/></div>
+          <div className="form-field"><label htmlFor={`online-next-${zone.id}`}>{common.predictability}</label><textarea id={`online-next-${zone.id}`} rows={2} maxLength={2000} value={zone.next} onChange={e=>zoneField(index,z=>({...z,next:e.target.value}))}/></div>
+          <label className="checkbox-label commitment"><input type="checkbox" checked={zone.optional} onChange={e=>zoneField(index,z=>({...z,optional:e.target.checked}))}/>{t.optional}</label>
+        </section>)}
+        <div className="button-row"><button className="button button-outline" type="button" disabled={disabled || draft.zones.length>=8} onClick={()=>change(current=>({...current,zones:[...current.zones,newZone()]}))}>{t.addZone}</button>
+          <button className="button" type="submit" disabled={disabled}>{pending?t.saving:t.save}</button></div>
+      </fieldset>
+    </form>
+    <p className="status-message" role={error?'alert':'status'}>{message || (dirty?t.unsaved:'')}</p>
+    {error==='conflict' && <a className="quiet-link" href={`/${locale}/workspace/${draft.id}`} target="_blank" rel="noopener noreferrer">{t.reload}</a>}
+    {error==='auth' && <Link className="quiet-link" href={`/${locale}/login`}>{t.login}</Link>}
+    <div className="button-row">{draft.revision>0 && <Link className="button button-outline" href={`/${locale}/workspace/${draft.id}/preview`}>{t.preview}</Link>}<Link className="quiet-link" href={`/${locale}/workspace`}>{t.back}</Link></div>
+  </>;
+}

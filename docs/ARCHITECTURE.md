@@ -1,6 +1,6 @@
 # Architecture
 
-The application uses Next.js 16.4.0 App Router, React 19.3.0 and strict TypeScript. Package versions are pinned and the lockfile is committed. Plain CSS defines tokens, responsive layouts and reading modes. Public pages render on the server; client code handles navigation, preferences, guide interaction, catalog filters, the contact helper, the local builder and interactive account forms.
+The application uses Next.js 16.4.0 App Router, React 19.3.0 and strict TypeScript. Package versions are pinned and the lockfile is committed. Plain CSS defines tokens, responsive layouts and reading modes. Public pages render on the server; client code handles navigation, preferences, guide interaction, catalog filters, the contact helper, the local/online builders and interactive account forms.
 
 ## Routes and language
 
@@ -17,6 +17,10 @@ The application uses Next.js 16.4.0 App Router, React 19.3.0 and strict TypeScri
 Visitor → public guide → typed fictional data → one zone at a time. No database or personal profile is involved.
 
 Editor → demo builder → versioned localStorage key scoped by locale → explicit Save → local preview. The public example continues to use the original typed guide. Invalid, incompatible or inaccessible browser storage falls back to the example.
+
+Verified organisation user → `/[locale]/workspace` → tenant-scoped reads → server action → invoker `save_place_draft` RPC → atomic PostgreSQL save with a global revision check → private saved-draft preview. Cookie sessions are server-validated and refreshed in routing middleware. A stale save returns a conflict without replacing the client’s unsaved draft.
+
+Zone photo → browser raster WebP → authenticated Node.js API → server Sharp decode/re-encode → immutable private Storage key → explicit draft save to attach metadata. Downloads go through an authenticated same-origin proxy with private/no-store caching. No public signed image URL is issued. Original files are not retained; processed private files are retained when detached.
 
 Contact → validated browser form → prepared text / clipboard. No outbound message or database persistence.
 
@@ -49,4 +53,4 @@ Illustrations are local SVGs, so the site needs no third-party image or font ser
 
 Local zone images use IndexedDB blobs with UUID references in language-scoped drafts. Image decoding and raster re-encoding remove original metadata. Local publication review records the exact saved draft, a representative, check date and statement version; it does not publish content.
 
-Supabase SSR registration, confirmation, account access and controlled first-owner onboarding use the dedicated project `uzlngrzokjzxvdfpctnt` in the VIANORAE preview. The owner confirmed real signup and organisation creation. Without the matching dedicated URL/ref/publishable key, account forms stay disabled. User metadata only prefills profile data and never authorises access. See `ORGANISATION-FLOW.md` for session/tenant verification and the remaining live guide/media work.
+Supabase SSR registration, confirmation, account access and controlled first-owner onboarding use the dedicated project `uzlngrzokjzxvdfpctnt` in the VIANORAE preview. The owner confirmed real signup and organisation creation. Without the matching dedicated URL/ref/publishable key, account forms stay disabled. User metadata only prefills profile data and never authorises access. See `ORGANISATION-FLOW.md` for session/tenant verification and the the private online workspace and remaining publication work.

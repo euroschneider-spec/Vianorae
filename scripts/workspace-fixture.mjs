@@ -1,0 +1,101 @@
+// Loopback-only Supabase API fixture backed by the real migrations and Postgres RLS.
+// Auth and Storage HTTP services are simulated; no remote project is contacted.
+import { createServer } from 'node:http';
+import { readFile, readdir } from 'node:fs/promises';
+import { randomUUID, createHmac } from 'node:crypto';
+import { PGlite } from '@electric-sql/pglite';
+if (process.env.VIANORAE_TEST_FIXTURE !== '1') throw new Error('Test fixture must be explicitly enabled');
+const db = new PGlite();
+const id = n => `00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
+const users = [1,2].map(n => ({id:id(n),aud:'authenticated',role:'authenticated',email:`owner${n}@example.test`,email_confirmed_at:'2026-10-01T12:00:00Z',is_anonymous:false,app_metadata:{provider:'email'},user_metadata:{},created_at:'2026-10-01T12:00:00Z'}));
+const files = new Map(); const tokens = new Map(); let tail = Promise.resolve();
+const locked = fn => {const result=tail.then(fn);tail=result.catch(()=>{});return result;};
+await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key,email_confirmed_at timestamptz default now(),is_anonymous boolean not null default false);
+create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+grant usage on schema public,auth to anon,authenticated,service_role;grant execute on function auth.uid() to anon,authenticated,service_role;
+alter default privileges in schema public grant all on tables to anon,authenticated;
+create schema storage;create table storage.buckets(id text primary key,name text not null,public boolean not null default false,file_size_limit bigint,allowed_mime_types text[]);
+create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text references storage.buckets(id),name text not null,unique(bucket_id,name));
+alter table storage.objects enable row level security;grant usage on schema storage to anon,authenticated,service_role;grant all on storage.objects to authenticated,service_role;grant all on storage.buckets to service_role;`);
+for (const file of (await readdir('supabase/migrations')).filter(f=>f.endsWith('.sql')).sort()) await db.exec(await readFile(`supabase/migrations/${file}`,'utf8'));
+for (let n=1;n<=2;n++) {
+  await db.query('insert into auth.users(id) values($1)',[id(n)]);
+  await db.query('insert into public.organizations(id,name) values($1,$2)',[id(100+n),`Fixture museum ${n}`]);
+  await db.query('insert into public.organization_members(organization_id,user_id,role) values($1,$2,$3)',[id(100+n),id(n),'owner']);
+}
+function session(user) {
+  const now=Math.floor(Date.now()/1000);
+  const encode=value=>Buffer.from(JSON.stringify(value)).toString('base64url');
+  const unsigned=`${encode({alg:'HS256',typ:'JWT'})}.${encode({sub:user.id,aud:'authenticated',role:'authenticated',iss:'https://vianorae-fixture.supabase.co/auth/v1',iat:now,exp:now+3600,email:user.email,is_anonymous:false})}`;
+  const access=`${unsigned}.${createHmac('sha256','fixture-only-key').update(unsigned).digest('base64url')}`;
+  const refresh=randomUUID();tokens.set(access,user);tokens.set(refresh,user);
+  return {access_token:access,refresh_token:refresh,token_type:'bearer',expires_in:3600,expires_at:now+3600,user};
+}
+const send=(res,status,value,headers={})=>{res.writeHead(status,{'Content-Type':'application/json',...headers});res.end(JSON.stringify(value));};
+const safe=value=>{if(!/^[a-z_]+$/.test(value)) throw new Error('Unsafe identifier');return value;};
+const tables=new Set(['organizations','organization_members','places','place_translations','zones','zone_translations','sensory_profiles','media_assets','guides','guide_steps']);
+createServer(async(req,res)=>{
+  try {
+    const url=new URL(req.url,'http://127.0.0.1:3012');const chunks=[];for await(const chunk of req) chunks.push(chunk);const body=Buffer.concat(chunks);
+    if (url.pathname==='/health') return send(res,200,{ready:true});
+    if (url.pathname==='/auth/v1/token') {
+      const payload=JSON.parse(body.toString());const user=url.searchParams.get('grant_type')==='refresh_token'?tokens.get(payload.refresh_token):users.find(u=>u.email===payload.email && payload.password==='Fixture-only-passphrase-123');
+      return send(res,user?200:400,user?session(user):{error:'invalid_grant',error_description:'Invalid fixture credentials'});
+    }
+    const token=(req.headers.authorization || '').replace(/^Bearer /,'');const user=tokens.get(token);
+    if (url.pathname==='/auth/v1/user') return send(res,user?200:401,user || {msg:'Invalid token'});
+    if (url.pathname==='/auth/v1/logout') {tokens.delete(token);res.writeHead(204);return res.end();}
+    if (!user && !(url.pathname==='/rest/v1/rpc/workspace_schema_version')) return send(res,401,{code:'42501',message:'Sign in required'});
+    await locked(async()=>{
+      await db.exec('begin');
+      try {
+        await db.exec(`set local role ${user?'authenticated':'anon'}`);
+        await db.query("select set_config('request.jwt.claim.sub',$1,true)",[user?.id || '']);
+        if (url.pathname.startsWith('/rest/v1/rpc/')) {
+          const rpc=url.pathname.split('/').at(-1);let result;
+          if(rpc==='workspace_schema_version') result=(await db.query('select public.workspace_schema_version() value')).rows[0].value;
+          else if(rpc==='save_place_draft') {
+            const p=JSON.parse(body.toString());
+            result=(await db.query('select public.save_place_draft($1,$2,$3,$4,$5::jsonb) value',[p.org,p.place,p.expected_revision,p.content_locale,JSON.stringify(p.draft)])).rows[0].value;
+          } else throw new Error('Unsupported RPC');
+          await db.exec('commit');return send(res,200,result);
+        }
+        if (url.pathname.startsWith('/rest/v1/')) {
+          const table=url.pathname.split('/').at(-1);if(!tables.has(table) || req.method!=='GET') throw new Error('Unsupported REST request');
+          const values=[];const filters=[];
+          for(const [key,value] of url.searchParams) {
+            if(['select','order','limit'].includes(key)) continue;
+            const [op,...rest]=value.split('.');if(!['eq','neq'].includes(op)) throw new Error('Unsupported filter');
+            const filterValue=rest.join('.');values.push(filterValue==='true'?true:filterValue==='false'?false:filterValue);filters.push(`${safe(key)} ${op==='eq'?'=':'<>'} $${values.length}`);
+          }
+          const ordering=(url.searchParams.get('order') || '').split(',').filter(Boolean).map(item=>{const [key,dir]=item.split('.');return `${safe(key)} ${dir==='desc'?'desc':'asc'}`;}).join(',');
+          const limit=Math.min(100,Number(url.searchParams.get('limit') || 100));
+          const query=`select * from public.${table}${filters.length?' where '+filters.join(' and '):''}${ordering?' order by '+ordering:''} limit ${limit}`;
+          const rows=(await db.query(query,values)).rows;
+          if(table==='places' && url.searchParams.get('select')?.includes('place_translations(')) for(const row of rows) row.place_translations=(await db.query('select name,locale from public.place_translations where place_id=$1',[row.id])).rows;
+          for(const row of rows) if(row.photographed_on instanceof Date) row.photographed_on=row.photographed_on.toISOString().slice(0,10);
+          await db.exec('commit');
+          if(req.headers.accept?.includes('vnd.pgrst.object')) return rows.length===1?send(res,200,rows[0]):send(res,406,{code:'PGRST116',details:`The result contains ${rows.length} rows`,message:'JSON object requested, multiple (or no) rows returned'});
+          return send(res,200,rows);
+        }
+        if(url.pathname.startsWith('/storage/v1/object/')) {
+          const rest=url.pathname.slice('/storage/v1/object/'.length).replace(/^authenticated\//,'');const [bucket,...parts]=rest.split('/');const key=decodeURIComponent(parts.join('/'));
+          if(bucket!=='vianorae-private-photos') throw new Error('Unsupported bucket');
+          if(req.method==='POST') {
+            await db.query('insert into storage.objects(bucket_id,name) values($1,$2)',[bucket,key]);files.set(key,body);
+            await db.exec('commit');return send(res,200,{Key:`${bucket}/${key}`,Id:randomUUID()});
+          }
+          if(req.method==='GET') {
+            const visible=(await db.query('select name from storage.objects where bucket_id=$1 and name=$2',[bucket,key])).rows.length;
+            await db.exec('commit');if(!visible || !files.has(key)) return send(res,404,{message:'Object not found'});
+            res.writeHead(200,{'Content-Type':'image/webp'});return res.end(files.get(key));
+          }
+        }
+        throw new Error(`Unsupported fixture request ${url.pathname}`);
+      } catch(error) {
+        await db.exec('rollback');console.error(error.code || '',error.message);
+        send(res,error.code==='42501'?403:400,{code:error.code || 'FIXTURE',message:error.message});
+      }
+    });
+  } catch(error) {console.error(error);send(res,500,{message:'Fixture failure'});}
+}).listen(3012,'127.0.0.1',()=>console.log('VIANORAE test fixture ready on loopback:3012'));

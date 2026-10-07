@@ -1,8 +1,8 @@
 # Database foundation and safety boundaries
 
-The CLI created all three migration filenames. Supabase CLI 2.81.3 was used after the newer CLI could not initialise its global config in the managed read-only home. PostgreSQL 17 is configured for future local Supabase use. The CLI remains unlinked. The owner installed the three migrations manually in the new dedicated Supabase project `uzlngrzokjzxvdfpctnt`; the VIANORAE preview uses that project. Manual installation did not populate CLI migration history: inspect and reconcile it before any migration push, and do not reapply the foundation.
+The CLI created all four migration filenames. Supabase CLI 2.81.3 was used after the newer CLI could not initialise its global config in the managed read-only home. PostgreSQL 17 is configured for future local Supabase use. The CLI remains unlinked. The owner installed the four migrations manually in the new dedicated Supabase project `uzlngrzokjzxvdfpctnt`; the VIANORAE preview uses that project. Manual installation did not populate CLI migration history: inspect and reconcile it before any migration push, and do not reapply the foundation.
 
-`npm run test:db` executes all three migrations in an isolated PGlite PostgreSQL instance with test-only `auth.users`, `auth.uid()`, anon/authenticated/service roles and initially permissive default privileges. It tests real SQL grants, constraints and RLS; it does not substitute for a full Supabase integration test.
+`npm run test:db` executes all four migrations in an isolated PGlite PostgreSQL instance with test-only `auth.users`, `auth.uid()`, anon/authenticated/service roles and initially permissive default privileges. It tests real SQL grants, constraints and RLS; it does not substitute for a full Supabase integration test.
 
 ## Tables
 
@@ -43,8 +43,18 @@ The private `platform_admins` table has no client policies or direct client gran
 3. Regenerate schema types from that new schema; configure Supabase Auth SSR with server-validated identity.
 4. Implement onboarding, last-owner protections, invitation validation and server-authorized membership management before exposing role controls.
 5. Implement atomic publication with complete snapshot validation, assigned-assessor checks, independent reviewer separation, validity/expiry logic, and trustworthy source mapping.
-6. Configure private Storage buckets and tenant-specific media policies before enabling uploads. No Storage bucket or permissive Storage policy is created here.
+6. Configure private Storage buckets and tenant-specific media policies before enabling uploads. The online-builder migration creates only the private `vianorae-private-photos` bucket, capped at 3 MB of WebP per object, with tenant/known-zone SELECT and immutable INSERT policies. UPDATE and DELETE are not granted by those policies.
 7. Validate actual Data API grants and RLS in the real Supabase stack. Recent Supabase changes remove automatic Data API exposure; explicit grants in these migrations address that difference.
 8. Keep publishable keys separate from server-only keys; never place a service key in a `NEXT_PUBLIC_` variable. Add retention, processor agreements and backup procedures before the pilot.
 
 The organisation-onboarding migration adds an immutable-for-client responsibility record and a controlled first-owner bootstrap. A verified, non-anonymous account can create only its own new organisation. The public RPC is an invoker wrapper around a restricted private definer; it accepts no user, tenant, role or version identifiers. Consent is validated and recorded with server time. The owner resolved the earlier free-project limit by creating a new account/project and confirmed first-owner onboarding in the deployed preview. Authenticated multi-tenant integration checks and live advisors remain pending; management API access currently refuses the new project.
+
+## Online workspace migration
+
+`20261007074309_online_builder_private_photos.sql` adds place revisions, localized next-step text, active/history flags, stable step ordering, private Storage policies and `save_place_draft`. The owner installed it in the existing dedicated VIANORAE database; a read-only public API probe confirms version 1. It is additive and deletes no records or files.
+
+The invoker RPC checks verified non-anonymous identity and owner/admin/editor membership, locks the place, checks the expected global revision, validates all input and saves the draft in one transaction. Invalid data, cross-place IDs, absent photo files and stale revisions roll back the whole operation. Server identity never comes from caller-supplied user metadata. Public guide snapshots and publication status are unchanged by a draft save.
+
+Photo keys contain organisation/place/zone/asset UUIDs. Storage authorization checks verified editable membership and an existing zone belonging to that place and organisation. Each file has an immutable key; metadata attaches it only after checking the private object exists. Detaching or replacing a photo retains its private file and metadata history. Removed steps become inactive for their guide language; core zone records remain. Descriptions and step order are per language; venue facts, sensory fields and photos are shared. A global revision prevents simultaneous language/device saves from silently overwriting one another.
+
+Forty-two SQL scenarios test actual grants, RLS, constraints, atomicity, onboarding, tenant isolation, immutable snapshots and photo policies in PGlite. The Storage schema is a minimal test fixture: these checks do not exercise the hosted Storage service itself. `npm run test:workspace` additionally runs the application, real image re-encoding and browser flows against those migrations with simulated Auth and Storage HTTP. Live advisors and hosted multi-tenant tests remain pending management access.
