@@ -45,7 +45,7 @@ Tenant relationships are constrained by composite foreign keys. Public readers c
 
 ## Accessibility and performance
 
-Semantic HTML, a skip link, labelled controls, visible focus, focus movement on guide navigation, text-based sensory labels and reflow underpin the UI. Dark/high-contrast settings are optional preferences. No autoplay, pop-ups, marketing trackers or essential motion is present. WCAG 2.2 AA is a target, not an audited compliance claim.
+Semantic HTML, a skip link, labelled controls, visible focus, focus movement on guide navigation, text-based sensory labels and reflow underpin the UI. Dark/high-contrast settings are optional preferences. No autoplay, automatically opened panels, marketing trackers or essential motion is present. A single shared reading dialog opens only on request from image/header controls; native modal focus management supports Escape and returns focus to its opener. Preferences retain the existing browser-local key. Public/demo guides offer step-by-step and complete text views; all essential instructions, progress and messages are written on screen. WCAG 2.2 AA is a target, not an audited compliance claim.
 
 Illustrations are local SVGs, so the site needs no third-party image or font service. Static page generation covers the public content and dashboard scaffold. QR generation and stable redirects use the default Node.js runtime. Preview indexing is disabled until real content and legal details are ready.
 

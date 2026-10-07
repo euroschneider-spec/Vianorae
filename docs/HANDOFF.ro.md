@@ -26,3 +26,9 @@ Doar preview-ul ramurii `foundation-v0.1` are URL-ul, referința, cheia publică
 Pentru demo local: `npm ci`, apoi `npm run dev`. Pentru verificări: `npm run check`, `npm run test:e2e`, apoi `npm run test:workspace`, cu Chromium instalat. Ultima comandă folosește două organizații fictive și migrațiile reale în PostgreSQL izolat; serviciile HTTP Auth/Storage sunt simulate și nu accesează baza live.
 
 Rezultatele și limitele verificărilor sunt în `VERIFICATION.md`. Următoarea etapă este descrisă în `NEXT-STEPS.md`.
+
+## Actualizare accesibilitate
+
+Setările de lectură sunt accesibile lângă imaginea principală/exemplului de ghid și din antet. Panoul se deschide doar la cerere, folosește dialog nativ, păstrează focusul în interior și se închide cu Escape sau butonul de închidere. Preferințele existente rămân salvate în browser.
+
+Ghidul public și preview-ul demo oferă acum „Pas cu pas” și „Ghid complet în text”. Vederea integrală include toți pașii, descrierile, nivelurile senzoriale, indicațiile următoare și informațiile generale/proveniența fără imagini sau redare. Toate instrucțiunile, progresul și mesajele siteului sunt textuale. Nu există media audio/video în această livrare; pentru adăugări viitoare sunt necesare transcrieri pentru audio și subtitrări pentru video cu sunet. Aceste schimbări nu necesită migrare SQL.
