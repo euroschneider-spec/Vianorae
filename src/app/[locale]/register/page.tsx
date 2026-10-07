@@ -1,0 +1,20 @@
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { getCopy, isLocale } from '@/lib/i18n';
+import { getOrganisationCopy } from '@/lib/organisation-copy';
+import { authConfigured } from '@/lib/supabase/config';
+import { OrganisationForm } from '@/components/organisation-form';
+import { ResponsibilityNotice } from '@/components/responsibility-notice';
+
+export const metadata = { title: 'Organisation registration', robots: { index: false, follow: false } };
+export default async function Register({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params; if (!isLocale(locale)) notFound();
+  const t = getOrganisationCopy(locale);
+  return <main id="main-content" className="container">
+    <div className="page-heading"><p className="eyebrow">VIANORAE</p><h1>{t.register}</h1><p className="lead">{t.accountIntro}</p></div>
+    <div className="content-body"><ResponsibilityNotice locale={locale}/>
+      <OrganisationForm locale={locale} mode="register" enabled={authConfigured()}/>
+      <div className="button-row"><Link className="quiet-link" href={`/${locale}/login`}>{t.login}</Link><Link className="quiet-link" href={`/${locale}/dashboard`}>{getCopy(locale).openWorkspace}</Link></div>
+    </div>
+  </main>;
+}

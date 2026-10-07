@@ -6,7 +6,7 @@ export type RecordStatus='draft'|'published'|'archived';
 export type SourceLevel='venue_provided'|'assessor_verified'|'independent_audit';
 export type OrganizationRole='owner'|'admin'|'editor'|'assessor'|'reviewer';
 export type SensoryLevel='unknown'|'low'|'moderate'|'high'|'variable';
-export interface OrganizationRow{id:UUID;name:string;country_code:string|null;status:RecordStatus;created_at:string}
+export interface OrganizationRow{id:UUID;name:string;country_code:string|null;organization_type:'institution'|'museum'|'hotel'|'cultural'|'public_service'|'other';status:RecordStatus;created_at:string}
 export interface OrganizationMemberRow{organization_id:UUID;user_id:UUID;role:OrganizationRole;created_at:string}
 export interface PlaceRow{id:UUID;organization_id:UUID;slug:string;country_code:string|null;city:string;address:string;place_type:string;status:RecordStatus;template_id:UUID|null;created_at:string}
 export interface ZoneRow{id:UUID;place_id:UUID;organization_id:UUID;parent_zone_id:UUID|null;type:string;sort_order:number;status:RecordStatus}
@@ -16,3 +16,5 @@ export interface SensoryProfileRow{id:UUID;zone_id:UUID;place_id:UUID;organizati
 export interface AssessmentRow{id:UUID;place_id:UUID;organization_id:UUID;method:string;protocol_version:string;assessed_on:string;valid_until:string;assessor_id:UUID;reviewer_id:UUID|null;instruments:Json;source_level:SourceLevel;status:'draft'|'in_review'|'approved'|'expired'|'withdrawn';created_at:string}
 export interface MeasurementRow{id:UUID;profile_id:UUID;place_id:UUID;organization_id:UUID;assessment_id:UUID;metric:'sound'|'light'|'temperature';value:number;unit:'dB(A)'|'lux'|'C';instrument:string;measured_at:string;assessor_id:UUID}
 export interface QrRedirectRow{public_code:string;place_id:UUID;organization_id:UUID;guide_id:UUID}
+
+export interface OrganizationAcknowledgementRow{organization_id:UUID;user_id:UUID;representative_name:string;statement_version:string;statement_locale:'en'|'ro'|'de';accepted_at:string}

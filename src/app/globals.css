@@ -11,3 +11,17 @@ h1,h2,h3,.eyebrow,.button,.brand,.source-label{overflow-wrap:anywhere}
 .org-banner>div,.footer-bottom>*{min-width:0;max-width:100%}.footer-bottom nav{flex-wrap:wrap}.button{max-width:100%}.preview-card-heading>*{min-width:0}.preview-card-heading{gap:10px}.mini-dots{flex-shrink:0}.prose,.content-body{min-width:0}input,select,textarea{min-width:0}
 .local-guide-title{font-family:Georgia,serif;font-size:1.75rem;margin-bottom:24px}
 html[data-theme=dark] .eyebrow,html[data-theme=dark] .status-message{color:#bdd9c7}
+
+/* Organisation onboarding, local photography and deliberate publication review. */
+.responsibility-notice,.publication-review{padding:25px;border:1px solid var(--line);border-left:4px solid var(--accent);background:var(--sand);border-radius:8px;margin-block:24px}
+.responsibility-notice h2,.publication-review h2{font-family:Georgia,serif;font-size:1.65rem;line-height:1.3}
+.responsibility-notice p,.responsibility-notice li,.publication-review p{font-size:.92rem}
+.responsibility-notice li{margin-bottom:8px}.small-note{font-size:.82rem;color:var(--muted)}
+.photo-editor{margin-block:24px}.photo-editor p{font-size:.86rem}.draft-photo{width:100%;max-width:600px;max-height:320px;object-fit:contain;margin-block:18px;background:var(--sand);border-radius:6px}
+.photo-editor input[type=file]{max-width:100%;overflow:hidden}.commitment{align-items:flex-start;margin-block:20px;line-height:1.6}.commitment input{flex-shrink:0;margin-top:3px}
+.organisation-form{max-width:900px;margin-bottom:28px}.organisation-form fieldset{padding:24px}.organisation-form button{margin-top:22px}.organisation-form fieldset:disabled{opacity:.8}
+.account-link{display:inline-flex;align-items:center;gap:7px;min-height:44px;min-width:44px;font-size:.75rem;text-decoration:none;max-width:150px}.account-link span{line-height:1.4}.account-link svg{flex-shrink:0}
+@media(max-width:1200px){.account-link span{display:none}.account-link{justify-content:center}.header-actions{gap:10px}}
+@media(max-width:760px){.photo-editor,.responsibility-notice,.publication-review,.organisation-form fieldset{padding:18px}.account-link{min-width:34px}.header-actions{gap:2px}}
+fieldset{min-width:0;max-width:100%}legend{max-width:100%;overflow-wrap:anywhere}.responsibility-notice p,.responsibility-notice li,.commitment{overflow-wrap:anywhere}
+.page-heading p{overflow-wrap:anywhere}

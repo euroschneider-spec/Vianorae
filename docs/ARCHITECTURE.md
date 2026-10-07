@@ -1,6 +1,6 @@
 # Architecture
 
-The application uses Next.js 16.4.0 App Router, React 19.3.0 and strict TypeScript. Package versions are pinned and the lockfile is committed. Plain CSS defines tokens, responsive layouts and reading modes. Public pages render on the server; client code is limited to navigation, preferences, guide interaction, catalog filters, the contact helper and the local builder.
+The application uses Next.js 16.4.0 App Router, React 19.3.0 and strict TypeScript. Package versions are pinned and the lockfile is committed. Plain CSS defines tokens, responsive layouts and reading modes. Public pages render on the server; client code handles navigation, preferences, guide interaction, catalog filters, the contact helper, the local builder and interactive account forms.
 
 ## Routes and language
 
@@ -44,3 +44,9 @@ Tenant relationships are constrained by composite foreign keys. Public readers c
 Semantic HTML, a skip link, labelled controls, visible focus, focus movement on guide navigation, text-based sensory labels and reflow underpin the UI. Dark/high-contrast settings are optional preferences. No autoplay, pop-ups, marketing trackers or essential motion is present. WCAG 2.2 AA is a target, not an audited compliance claim.
 
 Illustrations are local SVGs, so the site needs no third-party image or font service. Static page generation covers the public content and dashboard scaffold. QR generation and stable redirects use the default Node.js runtime. Preview indexing is disabled until real content and legal details are ready.
+
+## Organisation follow-up
+
+Local zone images use IndexedDB blobs with UUID references in language-scoped drafts. Image decoding and raster re-encoding remove original metadata. Local publication review records the exact saved draft, a representative, check date and statement version; it does not publish content.
+
+Supabase SSR registration, confirmation, account access and controlled first-owner onboarding are prepared but explicitly disabled until dedicated project configuration is present. No user metadata authorises access. The administrative account’s free-project limit blocked provisioning. See `ORGANISATION-FLOW.md` for activation and verification requirements.

@@ -1,7 +1,8 @@
 import type { Locale } from './i18n';
 export type SensoryLevel = 'low' | 'moderate' | 'high' | 'variable' | 'unknown';
 export type SensoryProfile = Record<'sound' | 'light' | 'crowding' | 'smell' | 'temperature' | 'visual', SensoryLevel>;
-export type Zone = { id: string; title: string; description: string; note: string; next: string; illustration: string; sensory: SensoryProfile };
+export type ZonePhoto = { id: string; alt: string; rights: string; photographedOn: string };
+export type Zone = { id: string; title: string; description: string; note: string; next: string; illustration: string; sensory: SensoryProfile; photo?: ZonePhoto };
 export type Guide = { schemaVersion: 1; title: string; locale: Locale; zones: Zone[]; sourceLevel: 'venue_provided'; isDemo: true };
 const profiles: SensoryProfile[] = [
   { sound:'variable', light:'moderate', crowding:'variable', smell:'low', temperature:'variable', visual:'low' },
@@ -49,6 +50,21 @@ export function parseDraft(raw: string | null, locale: Locale): Guide {
       const zone = candidate.zones[i];
       if(zone.id !== fallback.zones[i].id || ['title','description','note','next'].some(key => typeof zone[key as keyof Zone] !== 'string' || (zone[key as keyof Zone] as string).length > 2000) || !zone.title.trim() || !zone.description.trim() || !zone.sensory || Object.keys(profiles[i]).some(key => !levels.includes(zone.sensory[key as keyof SensoryProfile]))) return fallback;
     }
-    return { ...candidate, zones: candidate.zones.map((zone,i)=>({...zone, illustration:fallback.zones[i].illustration})) };
+    return { ...candidate, zones: candidate.zones.map((zone,i)=>({
+      ...zone, illustration:fallback.zones[i].illustration,
+      photo: validPhoto(zone.photo) ? zone.photo : undefined,
+    })) };
   } catch { return fallback; }
+}
+
+export function validPhoto(photo: unknown): photo is ZonePhoto {
+  if (!photo || typeof photo !== 'object') return false;
+  const value = photo as ZonePhoto;
+  return typeof value.id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.id)
+    && typeof value.alt === 'string' && Boolean(value.alt.trim()) && value.alt.length <= 500
+    && typeof value.rights === 'string' && Boolean(value.rights.trim()) && value.rights.length <= 500
+    && typeof value.photographedOn === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.photographedOn)
+    && Number.isFinite(Date.parse(value.photographedOn))
+    && new Date(value.photographedOn).toISOString().slice(0,10) === value.photographedOn
+    && value.photographedOn <= new Date().toISOString().slice(0,10);
 }

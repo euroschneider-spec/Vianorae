@@ -11,7 +11,7 @@ Proiectul este construit separat în `vianorae-platform`, pe baza planului din 6
 - `/en/dashboard/preview`: preview pentru draftul salvat.
 - `/en/dashboard/share`: QR SVG și ruta stabilă a exemplului.
 
-Autentificarea, încărcarea fotografiilor, publicarea live, invitațiile și emailurile sunt pentru etapa următoare. Formularul Contact pregătește o solicitare de copiat; nu trimite mesaje.
+Editorul permite acum încărcarea locală a fotografiilor, cu text alternativ, drepturi și dată. Pagina de înscriere este la `/ro/register`. Conturile reale sunt inactive: Supabase a refuzat proiectul nou din cauza limitei de două proiecte gratuite. Niciun proiect existent nu a fost modificat. Publicarea live, stocarea media pe server, invitațiile și emailurile rămân pentru etapa următoare. Formularul Contact pregătește o solicitare de copiat; nu trimite mesaje.
 
 ## Pornire
 
@@ -35,3 +35,5 @@ Fundația se publică pe ramura `foundation-v0.1` în `https://github.com/eurosc
 Setările sunt în `package.json`: `npm ci`, `npm run build`, framework Next.js și Node.js 24. Demo-ul nu necesită environment variables. Verifică URL-ul preview, limbile, ghidul și QR-ul după deployment. Domeniul, DNS-ul, billingul și celelalte proiecte rămân în afara acestei livrări.
 
 Pentru continuare, vezi `NEXT-STEPS.md`. Rezultatele verificărilor și limitele lor sunt în `VERIFICATION.md`.
+
+Actualizarea din 7 octombrie: responsabilitatea organizației apare la înscriere, în editor și înainte de publicare. Verificarea locală identifică reprezentantul, data și versiunea exactă a draftului; nu publică ghidul. Detaliile tehnice și pașii de activare sunt în `ORGANISATION-FLOW.md`.

@@ -9,14 +9,14 @@ async function check(name,fn){await fn();checks++;console.log(`PASS ${name}`);}
 async function as(user,role='authenticated'){await db.exec(`reset role; set role ${role}; select set_config('request.jwt.claim.sub','${user||''}',false);`);}
 async function count(table){return (await db.query(`select count(*)::int as n from public.${table}`)).rows[0].n;}
 async function denied(sql){await assert.rejects(()=>db.exec(sql));}
-await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key);
+await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key,email_confirmed_at timestamptz default now(),is_anonymous boolean not null default false);
 create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
 grant usage on schema public,auth to anon,authenticated,service_role;grant execute on function auth.uid() to anon,authenticated,service_role;
 alter default privileges in schema public grant all on tables to anon,authenticated;`);
 const migrations=(await readdir('supabase/migrations')).filter(f=>f.endsWith('.sql')).sort();
 assert.equal(new Set(migrations.map(f=>f.split('_')[0])).size,migrations.length,'migration timestamps must be unique');
 for(const file of migrations)await db.exec(await readFile(`supabase/migrations/${file}`,'utf8'));
-await check('all 23 public tables use RLS',async()=>{const result=await db.query("select tablename from pg_tables where schemaname='public' and not rowsecurity");assert.deepEqual(result.rows,[]);assert.equal((await db.query("select count(*)::int n from pg_tables where schemaname='public'")).rows[0].n,23);});
+await check('all 24 public tables use RLS',async()=>{const result=await db.query("select tablename from pg_tables where schemaname='public' and not rowsecurity");assert.deepEqual(result.rows,[]);assert.equal((await db.query("select count(*)::int n from pg_tables where schemaname='public'")).rows[0].n,24);});
 await db.exec(`insert into auth.users values ${[owner,admin,editor,outsider,ownerB,assessor,reviewer,dual].map(x=>`('${x}')`).join(',')};
 insert into public.organizations(id,name) values('${orgA}','Demo A'),('${orgB}','Demo B');
 insert into public.organization_members(organization_id,user_id,role) values('${orgA}','${owner}','owner'),('${orgA}','${admin}','admin'),('${orgA}','${editor}','editor'),('${orgB}','${ownerB}','owner'),('${orgA}','${assessor}','assessor'),('${orgA}','${reviewer}','reviewer'),('${orgA}','${dual}','owner'),('${orgB}','${dual}','owner');
@@ -61,8 +61,24 @@ await check('unassigned reviewer cannot read an assessment',async()=>{assert.equ
 await db.exec('reset role');
 await check('measurement units and provenance dates are validated',async()=>{await denied(`insert into public.measurements(profile_id,place_id,organization_id,assessment_id,metric,value,unit,instrument,measured_at,assessor_id) values('${profileA}','${placeA}','${orgA}','${assessmentId}','sound',55,'lux','example meter',now(),'${assessorId}')`);await denied(`insert into public.assessments(place_id,organization_id,method,protocol_version,assessed_on,valid_until,assessor_id,source_level) values('${placeA}','${orgA}','on-site','0.1','2026-10-06','2026-01-01','${assessorId}','assessor_verified')`);});
 await check('client roles have no deletion privileges on any public table',async()=>{const result=await db.query("select tablename from pg_tables where schemaname='public' and (has_table_privilege('anon','public.'||tablename,'DELETE') or has_table_privilege('authenticated','public.'||tablename,'DELETE'))");assert.deepEqual(result.rows,[]);});
+const newOwner=id(9),unverified=id(10),anonymous=id(11);
+await db.exec(`insert into auth.users(id,email_confirmed_at,is_anonymous) values('${newOwner}',now(),false),('${unverified}',null,false),('${anonymous}',now(),true);`);
+await as(null,'anon');
+await check('anonymous visitors cannot onboard an organisation',async()=>{await denied("select public.create_organisation('New Museum','museum','Demo representative',true,'en')");});
+await as(unverified);
+await check('unverified accounts cannot onboard an organisation',async()=>{await denied("select public.create_organisation('New Museum','museum','Demo representative',true,'en')");});
+await as(anonymous);
+await check('anonymous auth accounts cannot onboard an organisation',async()=>{await denied("select public.create_organisation('New Museum','museum','Demo representative',true,'en')");});
+await as(newOwner);
+await check('onboarding requires explicit valid responsibility acceptance',async()=>{await denied("select public.create_organisation('New Museum','museum','Demo representative',false,'en')");await denied("select public.create_organisation('New Museum','forged','Demo representative',true,'en')");await denied("select public.create_organisation('New Museum','museum','   ',true,'en')");assert.equal(await count('organizations'),0);});
+let newOrg;
+await check('verified account creates only its own new tenant and fixed owner membership',async()=>{newOrg=(await db.query("select public.create_organisation('New Museum','museum','Demo representative',true,'en') id")).rows[0].id;assert.equal(await count('organizations'),1);assert.equal(await count('organization_members'),1);const membership=(await db.query('select * from public.organization_members')).rows[0];assert.equal(membership.user_id,newOwner);assert.equal(membership.role,'owner');assert.equal(membership.organization_id,newOrg);});
+await check('onboarding retries are idempotent and consent records cannot be forged',async()=>{assert.equal((await db.query("select public.create_organisation('Another Name','hotel','Another Person',true,'ro') id")).rows[0].id,newOrg);assert.equal(await count('organizations'),1);const acknowledgement=(await db.query('select * from public.organization_acknowledgements')).rows[0];assert.equal(acknowledgement.user_id,newOwner);assert.equal(acknowledgement.statement_version,'2026-10-07-v1');await denied("update public.organization_acknowledgements set representative_name='Forged'");await denied(`insert into public.organization_acknowledgements values('${orgB}','${newOwner}','Forged','2026-10-07-v1','en',now())`);});
+await as(ownerB);
+await check('responsibility records cannot be read across tenants',async()=>{assert.equal(await count('organization_acknowledgements'),0);});
+await db.exec('reset role');
 await db.exec("select set_config('request.jwt.claim.sub','',false)");
 await db.exec(await readFile('supabase/seed.sql','utf8'));
 await check('fictional seed creates five draft zones and fifteen zone translations',async()=>{assert.equal((await db.query("select count(*)::int n from public.zones where place_id='a0000000-0000-4000-8000-000000000002'")).rows[0].n,5);assert.equal((await db.query("select count(*)::int n from public.zone_translations where place_id='a0000000-0000-4000-8000-000000000002'")).rows[0].n,15);});
-console.log(`\n${checks} database security checks passed. Both migrations executed in isolated PostgreSQL (PGlite). No live database touched.`);
+console.log(`\n${checks} database security checks passed. All migrations executed in isolated PostgreSQL (PGlite). No live database touched.`);
 await db.close();

@@ -2,9 +2,9 @@
 
 The current delivery completes the local foundation. Build the next phase in this order:
 
-1. **Separate GitHub and Vercel resources:** `euroschneider-spec/Vianorae` repository created by the project owner; dedicated Vercel project in `euroschneider-6376s-projects`; preview URL only. No custom domain, DNS, billing change or production use of an existing project.
-2. **Separate Supabase project:** confirm ownership and free-plan availability, select EU region, apply reviewed migrations, and test the real stack. No environment variables or secrets from another project.
-3. **Organisation authentication:** invite-based onboarding, server-validated sessions, owner/admin/editor authorization and last-owner handling. Public guides remain account-free.
+1. **Separate GitHub and Vercel resources (completed for preview):** `euroschneider-spec/Vianorae` repository created by the project owner; dedicated Vercel project in `euroschneider-6376s-projects`; preview URL only. No custom domain, DNS, billing change or production use of an existing project.
+2. **Separate Supabase project (blocked by account free-project limit):** the owner selected the existing administrative organisation; new project creation was refused despite an estimated monthly cost of 0. Obtain separate free capacity or separately approve a reviewed cost before provisioning. Apply all three reviewed migrations and test the real stack. No environment variables or secrets from another project.
+3. **Organisation authentication:** registration/sign-in, SSR sessions, confirmation callback and first-owner responsibility-aware onboarding are prepared but disabled without configuration. Verify against the dedicated live project, then add invite-based onboarding and last-owner handling. Public guides remain account-free.
 4. **Database-backed Guide Builder:** create/edit places and 3–8 zones, media with alt text and rights, translations, sensory fields and ordered steps.
 5. **Publish:** validated immutable snapshots in one transaction, draft/published separation, source/expiry rules, stable database QR registry and mobile preview.
 6. **Pilot trust workflow:** assessor assignment, instruments, timestamps, evidence, independent review, protocol version, validity and re-assessment.

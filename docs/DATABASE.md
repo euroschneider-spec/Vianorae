@@ -2,7 +2,7 @@
 
 The CLI created both migration filenames. Supabase CLI 2.81.3 was used after the newer CLI could not initialise its global config in the managed read-only home. PostgreSQL 17 is configured for future local Supabase use. **No Supabase project is linked.**
 
-`npm run test:db` executes both migrations in an isolated PGlite PostgreSQL instance with test-only `auth.users`, `auth.uid()`, anon/authenticated/service roles and initially permissive default privileges. It tests real SQL grants, constraints and RLS; it does not substitute for a full Supabase integration test.
+`npm run test:db` executes all three migrations in an isolated PGlite PostgreSQL instance with test-only `auth.users`, `auth.uid()`, anon/authenticated/service roles and initially permissive default privileges. It tests real SQL grants, constraints and RLS; it does not substitute for a full Supabase integration test.
 
 ## Tables
 
@@ -46,3 +46,5 @@ The private `platform_admins` table has no client policies or direct client gran
 6. Configure private Storage buckets and tenant-specific media policies before enabling uploads. No Storage bucket or permissive Storage policy is created here.
 7. Validate actual Data API grants and RLS in the real Supabase stack. Recent Supabase changes remove automatic Data API exposure; explicit grants in these migrations address that difference.
 8. Keep publishable keys separate from server-only keys; never place a service key in a `NEXT_PUBLIC_` variable. Add retention, processor agreements and backup procedures before the pilot.
+
+The organisation-onboarding migration adds an immutable-for-client responsibility record and a controlled first-owner bootstrap. A verified, non-anonymous account can create only its own new organisation. The public RPC is an invoker wrapper around a restricted private definer; it accepts no user, tenant, role or version identifiers. Consent is validated and recorded with server time. No live database was provisioned because the active-free-project limit was reached.
