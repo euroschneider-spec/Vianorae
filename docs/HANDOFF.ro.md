@@ -11,7 +11,7 @@ Proiectul este construit separat în `vianorae-platform`, pe baza planului din 6
 - `/en/dashboard/preview`: preview pentru draftul salvat.
 - `/en/dashboard/share`: QR SVG și ruta stabilă a exemplului.
 
-Editorul permite acum încărcarea locală a fotografiilor, cu text alternativ, drepturi și dată. Pagina de înscriere este la `/ro/register`. Conturile reale sunt inactive: Supabase a refuzat proiectul nou din cauza limitei de două proiecte gratuite. Niciun proiect existent nu a fost modificat. Publicarea live, stocarea media pe server, invitațiile și emailurile rămân pentru etapa următoare. Formularul Contact pregătește o solicitare de copiat; nu trimite mesaje.
+Editorul permite acum încărcarea locală a fotografiilor, cu text alternativ, drepturi și dată. Pagina de înscriere este la `/ro/register`. Conturile reale sunt configurate în preview cu proiectul nou Supabase `uzlngrzokjzxvdfpctnt`; proprietarul a confirmat înscrierea, confirmarea emailului și crearea organizației. Schema are 24 de tabele publice cu RLS. Celelalte aplicații și baze nu au fost modificate. Builderul salvează încă local; publicarea live, stocarea media pe server, invitațiile și un serviciu de email pentru utilizatori publici rămân pentru etapa următoare. Formularul Contact pregătește o solicitare de copiat; nu trimite mesaje.
 
 ## Pornire
 

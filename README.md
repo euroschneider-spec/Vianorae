@@ -35,18 +35,18 @@ npm run start
 - Fictional local SQL seed, schema/domain types, automated checks and GitHub Actions workflow.
 - Local zone photograph selection, binary storage in IndexedDB, alternative text, rights and photography dates.
 - Organisation responsibility at registration, in the editor and in a deliberate pre-publication review.
-- Supabase SSR account integration prepared behind an explicit separate-project configuration guard.
+- Supabase SSR account integration configured in the independent preview, with owner-confirmed signup, email confirmation and organisation creation. Missing dedicated configuration still disables account forms.
 
 ## Demonstration boundaries
 
-This is the **foundation and start of the MVP**, not the complete live platform. Real organisation accounts, database-backed persistence, server image storage, invitations, live publishing, assessor workflows, billing, email delivery and PDF exports are not enabled. Supabase refused a new free project because the account has reached its active-free-project limit; no existing project was reused or changed. Demo photographs stay in browser IndexedDB. The Contact form prepares an enquiry to copy; it does not send messages. Registration and sign-in explicitly remain disabled without dedicated database configuration and link to the demo.
+This is the **foundation and start of the MVP**. Real organisation registration and first-owner onboarding are configured in the dedicated preview and were tested by the owner. The Guide Builder still saves locally: database-backed guide persistence, server image storage, invitations, live publishing, assessor workflows, billing and PDF export remain to implement. The new-account Supabase project is `uzlngrzokjzxvdfpctnt`; no other database or keys are reused. Built-in email works for development recipients; a production email provider is still required before public invitations. Demo photographs stay in browser IndexedDB. The Contact form prepares an enquiry to copy; it does not send messages. Without dedicated Supabase configuration, registration/sign-in remain explicitly disabled.
 
 The illustrations are original example assets, not photographs or evidence of a real venue. Every Museum description is fictional. Translations and legal/accessibility statements are development drafts requiring professional and user review before a real pilot.
 
 ## Project isolation
 
-Work was created solely in this new directory. No existing repository, deployment, database, secrets, domains or DNS were changed. No paid service was provisioned. No live Supabase database was created or linked.
+Work is confined to the dedicated VIANORAE directory, repository, Vercel preview and Supabase project. No unrelated application, database, secrets, custom domain or DNS was changed. No paid service was provisioned. The owner installed the reviewed schema in the new dedicated Supabase database.
 
-The confirmed destination is `euroschneider-spec/Vianorae`. Its initial README commit is preserved in the local history. The owner confirmed this repository’s separate Vercel project. It has been renamed to `vianorae-platform` (`prj_wxGgoaJGSuHR7ko74qEDGuJWMFzy`) to remove the unrelated brand reference. Its configured environment variable list is empty. Branch `foundation-v0.1` contains the foundation for preview review; remote `main` remains the owner’s initial commit until review. No application, database or secrets are shared with other projects.
+The confirmed destination is `euroschneider-spec/Vianorae`. Its initial README commit is preserved in the local history. The owner confirmed this repository’s separate Vercel project. It has been renamed to `vianorae-platform` (`prj_wxGgoaJGSuHR7ko74qEDGuJWMFzy`) to remove the unrelated brand reference. Only its `foundation-v0.1` preview has the dedicated Supabase URL/ref/publishable key configured. Branch `foundation-v0.1` contains the foundation for preview review; remote `main` remains the owner’s initial commit until review. No application, database or secrets are shared with other projects.
 
 Read [the organisation-flow update](docs/ORGANISATION-FLOW.md), [the handoff](docs/HANDOFF.ro.md), [architecture](docs/ARCHITECTURE.md), [database security](docs/DATABASE.md), [verification](docs/VERIFICATION.md), and [next MVP phase](docs/NEXT-STEPS.md).

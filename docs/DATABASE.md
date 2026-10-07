@@ -1,6 +1,6 @@
 # Database foundation and safety boundaries
 
-The CLI created both migration filenames. Supabase CLI 2.81.3 was used after the newer CLI could not initialise its global config in the managed read-only home. PostgreSQL 17 is configured for future local Supabase use. **No Supabase project is linked.**
+The CLI created all three migration filenames. Supabase CLI 2.81.3 was used after the newer CLI could not initialise its global config in the managed read-only home. PostgreSQL 17 is configured for future local Supabase use. The CLI remains unlinked. The owner installed the three migrations manually in the new dedicated Supabase project `uzlngrzokjzxvdfpctnt`; the VIANORAE preview uses that project. Manual installation did not populate CLI migration history: inspect and reconcile it before any migration push, and do not reapply the foundation.
 
 `npm run test:db` executes all three migrations in an isolated PGlite PostgreSQL instance with test-only `auth.users`, `auth.uid()`, anon/authenticated/service roles and initially permissive default privileges. It tests real SQL grants, constraints and RLS; it does not substitute for a full Supabase integration test.
 
@@ -34,7 +34,7 @@ The private `platform_admins` table has no client policies or direct client gran
 
 ## Fictional seed
 
-`supabase/seed.sql` creates one explicitly fictional, draft Museum with five zones and EN/RO/DE translations. It contains no auth accounts, passwords or memberships and publishes no guide. It is generated from the same typed demonstration data by `node scripts/create-demo-seed.mjs`. It is intended for a disposable local database or the future dedicated project only.
+`supabase/seed.sql` creates one explicitly fictional, draft Museum with five zones and EN/RO/DE translations. It contains no auth accounts, passwords or memberships and publishes no guide. It is generated from the same typed demonstration data by `node scripts/create-demo-seed.mjs`. It is intended for a disposable local database or the dedicated project only, after deliberate review. The manual installer does not apply this sample seed.
 
 ## Before connecting a new live database
 
@@ -47,4 +47,4 @@ The private `platform_admins` table has no client policies or direct client gran
 7. Validate actual Data API grants and RLS in the real Supabase stack. Recent Supabase changes remove automatic Data API exposure; explicit grants in these migrations address that difference.
 8. Keep publishable keys separate from server-only keys; never place a service key in a `NEXT_PUBLIC_` variable. Add retention, processor agreements and backup procedures before the pilot.
 
-The organisation-onboarding migration adds an immutable-for-client responsibility record and a controlled first-owner bootstrap. A verified, non-anonymous account can create only its own new organisation. The public RPC is an invoker wrapper around a restricted private definer; it accepts no user, tenant, role or version identifiers. Consent is validated and recorded with server time. No live database was provisioned because the active-free-project limit was reached.
+The organisation-onboarding migration adds an immutable-for-client responsibility record and a controlled first-owner bootstrap. A verified, non-anonymous account can create only its own new organisation. The public RPC is an invoker wrapper around a restricted private definer; it accepts no user, tenant, role or version identifiers. Consent is validated and recorded with server time. The owner resolved the earlier free-project limit by creating a new account/project and confirmed first-owner onboarding in the deployed preview. Authenticated multi-tenant integration checks and live advisors remain pending; management API access currently refuses the new project.

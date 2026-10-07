@@ -9,7 +9,7 @@ The application uses Next.js 16.4.0 App Router, React 19.3.0 and strict TypeScri
 - `src/lib/i18n.ts`: public and workspace UI dictionaries.
 - `src/lib/content.ts`: public explanatory and legal draft copy.
 - `src/lib/demo.ts`: typed fictional guide, sensory model and validated local draft schema.
-- `src/lib/database.types.ts`: manually maintained foundation row contracts; replace with schema-generated types when a new live Supabase project exists.
+- `src/lib/database.types.ts`: manually maintained foundation row contracts; replace with schema-generated types when management access to the new project is available.
 - `src/lib/roles.ts`: organisation-role descriptions.
 
 ## Current data flows
@@ -49,4 +49,4 @@ Illustrations are local SVGs, so the site needs no third-party image or font ser
 
 Local zone images use IndexedDB blobs with UUID references in language-scoped drafts. Image decoding and raster re-encoding remove original metadata. Local publication review records the exact saved draft, a representative, check date and statement version; it does not publish content.
 
-Supabase SSR registration, confirmation, account access and controlled first-owner onboarding are prepared but explicitly disabled until dedicated project configuration is present. No user metadata authorises access. The administrative account’s free-project limit blocked provisioning. See `ORGANISATION-FLOW.md` for activation and verification requirements.
+Supabase SSR registration, confirmation, account access and controlled first-owner onboarding use the dedicated project `uzlngrzokjzxvdfpctnt` in the VIANORAE preview. The owner confirmed real signup and organisation creation. Without the matching dedicated URL/ref/publishable key, account forms stay disabled. User metadata only prefills profile data and never authorises access. See `ORGANISATION-FLOW.md` for session/tenant verification and the remaining live guide/media work.
