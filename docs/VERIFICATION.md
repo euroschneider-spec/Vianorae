@@ -40,3 +40,7 @@ Automated axe checks cover WCAG A/AA tags on Home, Example guide, Contact, Guide
 - A dedicated Supabase project was requested in the owner-selected administrative organisation after cost lookup returned 0 monthly; creation was refused by the two-active-free-project limit. No existing project was paused, deleted, upgraded or reused. Real account creation remains inactive. The full Auth/SSR flow still needs testing against a dedicated live project.
 - Manual screen-reader testing, professional translation/legal review, real-user testing and methodological calibration remain for pilot readiness.
 - Initial browser checks found and led to fixes for loading-state edits, ambiguous select names, mobile decorative overflow, enlarged-text reflow and dark-mode contrast.
+
+## Deployment packaging regression
+
+The supplied Vercel log showed that an unanchored `supabase` exclusion removed `src/lib/supabase/config.ts` and `server.ts` before the build. Root-only exclusion rules now retain application code. `npm run check:deployment`, included in the standard check/CI command, validates every runtime source/public asset and build input against `.vercelignore`, while keeping root migrations, tooling and documentation excluded. Local/GitHub builds alone had not exercised this filtering step.

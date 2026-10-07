@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "test:e2e": "playwright test",
     "test:db": "node scripts/test-database.mjs",
-    "check": "npm run typecheck && npm run lint && npm run test:db && npm run build"
+    "check": "npm run typecheck && npm run lint && npm run test:db && npm run check:deployment && npm run build",
+    "check:deployment": "node scripts/check-deployment-files.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
@@ -31,6 +32,7 @@
     "@types/react-dom": "19.2.2",
     "eslint": "9.39.1",
     "eslint-config-next": "16.4.0",
+    "ignore": "5.3.2",
     "typescript": "5.9.3"
   },
   "engines": {

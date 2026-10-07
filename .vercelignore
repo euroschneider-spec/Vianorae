@@ -1,9 +1,10 @@
-.git
-.github
-supabase
-tests
-scripts
-docs
-playwright-report
-test-results
+# Anchor tooling exclusions to the project root. Nested folders in src are runtime code.
+/.git/
+/.github/
+/supabase/
+/tests/
+/scripts/
+/docs/
+/playwright-report/
+/test-results/
 *.tsbuildinfo
