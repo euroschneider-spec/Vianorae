@@ -34,13 +34,20 @@ Automated axe checks cover WCAG A/AA tags on Home, Example guide, Contact, Guide
 
 ## Limits
 
-- No live Supabase project or real auth account exists; SQL tests use PGlite and a test-only auth schema. Run full Supabase integration tests and advisors before a live connection.
-- The confirmed repository is `euroschneider-spec/Vianorae`, with initial README commit `f99fa8d9cf2ddec9d368ea2710a7031156b2f524` preserved. The owner authorized its separate Vercel project, renamed to `vianorae-platform` (`prj_wxGgoaJGSuHR7ko74qEDGuJWMFzy`). Its environment variable list is empty. The source branch is `foundation-v0.1`; live preview verification follows deployment.
-- No server media storage, email delivery, account invitation, paid subscription or live publish workflow is enabled. Image upload is real browser-local file selection/processing/storage only.
-- A dedicated Supabase project was requested in the owner-selected administrative organisation after cost lookup returned 0 monthly; creation was refused by the two-active-free-project limit. No existing project was paused, deleted, upgraded or reused. Real account creation remains inactive. The full Auth/SSR flow still needs testing against a dedicated live project.
+- Dedicated Supabase project `uzlngrzokjzxvdfpctnt` now exists. The owner-installed schema reports 24 RLS-protected public tables. The owner confirmed real account and organisation creation in preview. Authenticated multi-tenant integration tests and live advisors remain pending; isolated SQL tests do not replace them.
+- The confirmed repository is `euroschneider-spec/Vianorae`, with initial README commit `f99fa8d9cf2ddec9d368ea2710a7031156b2f524` preserved. The owner authorized its separate Vercel project, renamed to `vianorae-platform` (`prj_wxGgoaJGSuHR7ko74qEDGuJWMFzy`). Only `foundation-v0.1` preview has dedicated Supabase configuration. Deployment `dpl_GhKrNsH8n83FGochrca8Ms2UGDS1` is READY. Vercel protection denied automated fetch access (403); no automated live browser walkthrough is claimed.
+- No server media storage, production SMTP provider, account invitation, paid subscription or live publish workflow is enabled. Image upload is real browser-local file selection/processing/storage only.
+- The earlier free-project limit was resolved by the owner creating a new account/project. No existing project was paused, deleted, upgraded or reused. The owner saved Supabase URL Configuration and confirmed the signup/email/account/organisation flow in the deployed app; additional session and multi-tenant tests remain.
 - Manual screen-reader testing, professional translation/legal review, real-user testing and methodological calibration remain for pilot readiness.
 - Initial browser checks found and led to fixes for loading-state edits, ambiguous select names, mobile decorative overflow, enlarged-text reflow and dark-mode contrast.
 
 ## Deployment packaging regression
 
 The supplied Vercel log showed that an unanchored `supabase` exclusion removed `src/lib/supabase/config.ts` and `server.ts` before the build. Root-only exclusion rules now retain application code. `npm run check:deployment`, included in the standard check/CI command, validates every runtime source/public asset and build input against `.vercelignore`, while keeping root migrations, tooling and documentation excluded. Local/GitHub builds alone had not exercised this filtering step.
+
+## Dedicated project activation checks
+
+- The project-specific publishable key is accepted by Auth (HTTP 200). Email/password is enabled, email confirmation is required, and anonymous Auth is disabled.
+- Anonymous public reads of templates/guides/versions/QR return HTTP 200. Internal organisation/membership/user/acknowledgement reads return HTTP 401. Anonymous `create_organisation` returns HTTP 401 / PostgreSQL 42501. These automated API probes created no accounts or application rows.
+- A production build using the dedicated configuration passes. Local browser checks cover enabled EN/RO/DE registration, required consent fields, WCAG A/AA axe rules, and redirects from anonymous account access to sign-in. A missing confirmation code also safely redirects to sign-in on the local canonical host (`localhost`; Next normalizes loopback callback URLs). This is a local configured build, not an automated live Vercel browser test.
+- After saving URL settings, the owner confirmed signup, email confirmation and successful organisation creation in the deployed preview. This is manual owner verification, not an automated live browser test. Authenticated tenant isolation with a second organisation, expired links and sign-out/re-login remain unverified.

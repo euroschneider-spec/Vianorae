@@ -8,21 +8,23 @@
 - Organisation responsibility appears at registration, on the organisation and terms pages, in the editor and before publication. It covers supplied content, completeness, accuracy, currency, image rights and ongoing updates, with a concrete explanation of the impact on visitors. It is not a blanket legal release of the platform’s own obligations.
 - A separate publication review requires the responsible representative, check date and explicit acknowledgements. The exact saved draft is recorded locally with statement version `2026-10-07-v1`. Editing invalidates the displayed review and requires checking the new version. This neither publishes nor certifies a guide.
 
-## Real accounts: prepared but inactive
+## Real accounts: dedicated preview configuration
 
-Supabase reported a monthly creation cost of 0. The owner selected the existing administrative organisation with a completely separate VIANORAE project. Creation was refused because the account already has two active free projects. No project was created, paused, deleted or upgraded, and no existing database or keys were reused.
+The owner created the dedicated Supabase project `uzlngrzokjzxvdfpctnt` in a new account. Its SQL Editor result confirms installation of the three-migration schema: 24 public tables, all with RLS enabled. The manual installer refuses an existing application schema and runs atomically; it does not record Supabase CLI migration history. Reconcile migration history against the reviewed source before any future CLI migration push; do not reapply the foundation.
 
-Consequently registration and sign-in stay explicitly inactive. The form is disabled and does not collect or send credentials. It must not be represented as a functioning account service.
+Only the VIANORAE Vercel preview branch `foundation-v0.1` has the matching project ref, API URL and project-specific publishable key configured. The API accepts the public key, requires email confirmation, disables anonymous Auth, and refuses anonymous reads of organisation/user/acknowledgement data and anonymous onboarding. No service-role key or credentials from other applications are used.
+
+The configured preview deployment is READY. Registration/sign-in controls are enabled. After saving the exact preview callback URLs and Site URL, the owner confirmed successful real signup, email confirmation and organisation creation through the deployed app. This is owner-performed live verification; automated protected-preview access and authenticated multi-tenant integration tests remain pending. Management API access still refuses this new project. Built-in Supabase email delivery is for development and restricts recipients/rate; configure an appropriate provider and abuse controls before inviting public users.
 
 The code prepares Supabase SSR cookie sessions, email/password registration, PKCE email-confirmation callback, server-verified account access, sign-out and organisation onboarding. Editable user metadata only prefills profile suggestions; it never grants roles or tenant membership. The verified onboarding RPC atomically creates a new tenant with a fixed owner membership and a responsibility record for the authenticated user. Retries are idempotent. It accepts no caller-selected tenant, user ID, role, acceptance timestamp or statement version.
 
-## Activation when separate free capacity is available
+## Remaining activation and integration checks
 
-1. Provision a dedicated VIANORAE project; check actual cost again. Do not use any existing project as a fallback.
-2. Apply and review all three migrations, run Supabase advisors and regenerate database types.
+1. Dedicated project provisioned by the owner: `uzlngrzokjzxvdfpctnt`. Never use another project as a fallback.
+2. Schema installed manually; run Supabase advisors and regenerate database types when management access is available. Reconcile migration history before future CLI pushes.
 3. Set only this project's `VIANORAE_SUPABASE_PROJECT_REF`, `NEXT_PUBLIC_SUPABASE_URL`, and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in the VIANORAE preview. The guard requires matching project ref/URL and a publishable key. No service-role key is used.
 4. Enable email confirmation; configure the app URL and allow only the exact VIANORAE callback/branch URLs for redirects. Configure an appropriate email provider and abuse controls before public signup; built-in email delivery has development limits.
-5. Verify real signup → confirmation → sign-in → onboarding → tenant isolation → sign-out, including expired links and a second user. PGlite tests do not replace live Auth/SSR verification.
+5. Owner-performed signup → confirmation → account → organisation creation passed. Still verify sign-out/re-login, expired links and a second user/tenant. PGlite tests do not replace authenticated multi-tenant integration checks.
 6. Connect live guide persistence and private photo storage with tenant-scoped policies, followed by server-enforced publication review. The current editor remains a clearly labelled browser demo even after account activation.
 
 A Vercel preview branch remains separate from production. No custom domains, DNS, paid services or unrelated application settings are part of this change.
