@@ -5,11 +5,14 @@ import { useState } from 'react';
 import { Menu, X, ArrowUpRight } from 'lucide-react';
 import { getCopy, locales, localeNames, type Locale } from '@/lib/i18n';
 import { getOrganisationCopy } from '@/lib/organisation-copy';
+import { contentPages } from '@/lib/content';
+import { PageDensity } from './page-density';
 import { ThemeToggle } from './theme-toggle';
 export function Brand() { return <span className="brand"><span className="brand-mark" aria-hidden="true"><span/><span/><span/></span>NERUMA</span>; }
 export function SiteHeader({locale}:{locale:Locale}) {
   const t=getCopy(locale); const account=getOrganisationCopy(locale); const path=usePathname(); const [open,setOpen]=useState(false);
   const routes=['how-it-works','for-organisations','methodology','explore'];
+  const readable=contentPages.some(page=>path===`/${locale}/${page}`);
   return <>
     <a className="skip-link" href="#main-content">{t.skip}</a>
     {/* Language and appearance sit above the brand row: settings for the whole site, not navigation. */}
@@ -19,6 +22,7 @@ export function SiteHeader({locale}:{locale:Locale}) {
           {locales.map(lang=><Link key={lang} href={path.replace(/^\/(en|ro|de)(?=\/|$)/,`/${lang}`)} lang={lang} hrefLang={lang} aria-label={localeNames[lang]} aria-current={lang===locale?'page':undefined}>{lang.toUpperCase()}</Link>)}
         </nav>
       </div>
+      {readable ? <PageDensity locale={locale}/> : null}
       <ThemeToggle locale={locale}/>
     </div>
     <header className="site-header"><div className="header-inner">

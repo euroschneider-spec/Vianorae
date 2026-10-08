@@ -5,7 +5,7 @@ import { SlidersHorizontal, X, GripHorizontal, ArrowLeft, ArrowRight, ArrowUp, A
 import { getCopy, type Locale } from '@/lib/i18n';
 import { getAccessCopy } from '@/lib/accessibility-copy';
 import { ReadAloud } from './read-aloud';
-import { applyPreferences, defaults, isPreferences, savePreferences, storageKey, useTheme, type Preferences } from '@/lib/reading-prefs';
+import { applyPreferences, defaults, fromStored, savePreferences, storageKey, useTheme, type Preferences } from '@/lib/reading-prefs';
 
 export const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(value,Math.max(min,max)));
 // Dock to the bottom-left corner, clear of body copy that runs mid-page.
@@ -36,8 +36,8 @@ export function ReadingSettingsProvider({locale,children}:{locale:Locale;childre
   useEffect(()=>{
     let frame:number|undefined;
     try {
-      const saved=JSON.parse(localStorage.getItem(storageKey)||'null');
-      if(isPreferences(saved)) { applyPreferences(saved);frame=requestAnimationFrame(()=>setPrefs(saved)); }
+      const saved=fromStored(JSON.parse(localStorage.getItem(storageKey)||'null'));
+      applyPreferences(saved);frame=requestAnimationFrame(()=>setPrefs(saved));
     } catch { /* Defaults work when storage is unavailable. */ }
     return()=>{if(frame!==undefined) cancelAnimationFrame(frame);};
   },[]);
@@ -100,6 +100,8 @@ export function ReadingSettingsProvider({locale,children}:{locale:Locale;childre
       <p id="reading-intro">{a.readingIntro}</p>
       <div className="form-field"><label htmlFor="reading-size">{t.fontSize}</label><select id="reading-size" autoFocus value={prefs.size} onChange={e=>update({...prefs,size:e.target.value as Preferences['size']})}><option value="normal">{t.normal}</option><option value="large">{t.large}</option><option value="larger">{t.larger}</option></select></div>
       <div className="form-field"><label htmlFor="reading-theme">{t.theme}</label><select id="reading-theme" value={prefs.theme} onChange={e=>update({...prefs,theme:e.target.value as Preferences['theme']})}><option value="light">{t.lightMode}</option><option value="dark">{t.darkMode}</option><option value="contrast">{t.contrast}</option></select></div>
+      <div className="form-field"><label htmlFor="reading-width">{a.lineWidth}</label><select id="reading-width" value={prefs.width} onChange={e=>update({...prefs,width:e.target.value as Preferences['width']})}><option value="default">{a.lineDefault}</option><option value="narrow">{a.lineNarrow}</option></select></div>
+      <div className="form-field"><label htmlFor="reading-font">{a.typeface}</label><select id="reading-font" value={prefs.font} onChange={e=>update({...prefs,font:e.target.value as Preferences['font']})}><option value="default">{a.typeDefault}</option><option value="hyperlegible">{a.typeHyperlegible}</option></select></div>
       <label className="checkbox-label"><input type="checkbox" checked={prefs.spacing} onChange={e=>update({...prefs,spacing:e.target.checked})}/>{t.spacing}</label>
       <p className="notice reading-sound-note">{a.withoutSound}</p>
       <button type="button" className="text-button" onClick={()=>update(defaults)}>{t.reset}</button>

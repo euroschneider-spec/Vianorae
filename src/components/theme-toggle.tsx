@@ -1,7 +1,7 @@
 'use client';
 import { Sun, Moon } from 'lucide-react';
 import { getCopy, type Locale } from '@/lib/i18n';
-import { setTheme, useTheme } from '@/lib/reading-prefs';
+import { setPreference, useTheme } from '@/lib/reading-prefs';
 
 /**
  * Shows the theme it would switch *to*, so the label is an action rather than a status.
@@ -10,7 +10,7 @@ import { setTheme, useTheme } from '@/lib/reading-prefs';
  */
 export function ThemeToggle({locale}:{locale:Locale}) {
   const t=getCopy(locale);const theme=useTheme();const dark=theme==='dark';
-  return <button type="button" className="button button-small button-outline theme-toggle" aria-pressed={dark} onClick={()=>setTheme(dark?'light':'dark')}>
+  return <button type="button" className="button button-small button-outline theme-toggle" aria-pressed={dark} onClick={()=>setPreference('theme',dark?'light':'dark')}>
     {dark ? <Sun size={16} aria-hidden="true"/> : <Moon size={16} aria-hidden="true"/>}
     {dark ? t.lightMode : t.darkMode}
   </button>;

@@ -81,6 +81,14 @@
   font-size: 16px;
 }
 
+/* Reading-settings hooks. Text size scales the rem base; spacing relaxes runs of text.
+   Line width, typeface and density are attribute-driven too, so a reader's choice is applied
+   by the pre-paint script with no flash and no hydration dependency. */
+html[data-font="hyperlegible"] { --font-body: var(--font-hyperlegible), system-ui, sans-serif; }
+html[data-width="narrow"] .prose, html[data-width="narrow"] .page-heading .lead { max-width: 55ch; }
+/* Summary keeps the headings and the opening line of each section, and hides the rest. */
+html[data-density="summary"] .section-rest, html[data-density="summary"] .prose ul { display: none; }
+
 /* Reading-settings hooks. Text size scales the rem base; spacing relaxes runs of text. */
 html[data-text-size="large"] { font-size: 18px; }
 html[data-text-size="larger"] { font-size: 20px; }
@@ -356,6 +364,17 @@ legend { padding-inline: var(--space-2); max-width: 100%; font-weight: var(--fon
 .language-switch a[aria-current] { background: var(--color-accent); color: var(--color-bg); font-weight: 600; text-decoration: none; }
 
 
+.density-switch { display: inline-flex; overflow: hidden; border: 1px solid var(--color-divider); border-radius: var(--radius-md); }
+.density-switch button {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 36px; padding: 0 10px; font-size: 0.75rem;
+  color: var(--v-muted); background: transparent; border: 0;
+}
+.density-switch button + button { border-left: 1px solid var(--color-divider); }
+.density-switch button:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); color: var(--color-text); }
+.density-switch button[aria-pressed="true"] { background: var(--color-accent); color: var(--color-bg); font-weight: 600; }
+.density-note { margin-bottom: 24px; }
+
 .site-footer {
   border-top: 1px solid var(--color-divider); background: var(--color-surface);
   padding-block: 32px 20px; font-size: 0.875rem;
@@ -543,7 +562,7 @@ legend { padding-inline: var(--space-2); max-width: 100%; font-weight: var(--fon
 .completion h2 { font-size: clamp(1.625rem, 3vw, 2.125rem); line-height: 1.2; }
 .guide-display { margin-bottom: 24px; }
 .guide-display .notice { margin-bottom: 16px; }
-.guide-display button[aria-pressed="true"] { background: var(--color-accent-100); border-color: var(--color-accent); color: var(--color-accent-800); }
+.guide-display button[aria-pressed="true"] { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-bg); }
 .guide-text-view { padding: 28px 32px; background: var(--color-surface); border: 1px solid var(--color-divider); border-radius: var(--radius-lg); }
 .guide-text-view > h2 { font-size: clamp(1.5rem, 3vw, 2rem); line-height: 1.2; }
 .guide-text-steps { list-style: none; padding: 0; margin: 0; }

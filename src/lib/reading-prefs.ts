@@ -2,31 +2,49 @@
 import { useSyncExternalStore } from 'react';
 
 export type Theme='light'|'dark'|'contrast';
-export type Preferences={size:'normal'|'large'|'larger';theme:Theme;spacing:boolean};
+export type Size='normal'|'large'|'larger';
+export type Width='default'|'narrow';
+export type Font='default'|'hyperlegible';
+export type Density='full'|'summary';
+export type Preferences={size:Size;theme:Theme;spacing:boolean;width:Width;font:Font;density:Density};
 
 // Dark is the design default; the stored choice is reapplied before paint in the locale layout.
-export const defaults:Preferences={size:'normal',theme:'dark',spacing:false};
+export const defaults:Preferences={size:'normal',theme:'dark',spacing:false,width:'default',font:'default',density:'full'};
 export const storageKey='vianorae:reading:v1';
 
-const sizes:Preferences['size'][]=['normal','large','larger'];
+const sizes:Size[]=['normal','large','larger'];
 const themes:Theme[]=['light','dark','contrast'];
+const widths:Width[]=['default','narrow'];
+const fonts:Font[]=['default','hyperlegible'];
+const densities:Density[]=['full','summary'];
 
-export function isPreferences(value:unknown):value is Preferences {
-  const p=value as Partial<Preferences>|null;
-  return !!p && sizes.includes(p.size as Preferences['size']) && themes.includes(p.theme as Theme) && typeof p.spacing==='boolean';
+// Each field is validated on its own so preferences stored before a field existed still load.
+// Rejecting the whole object would silently reset a reader's theme when we add a setting.
+function one<T extends string>(value:unknown,allowed:T[],fallback:T):T {
+  return allowed.includes(value as T) ? value as T : fallback;
+}
+
+export function fromStored(raw:unknown):Preferences {
+  const v=(raw||{}) as Partial<Record<keyof Preferences,unknown>>;
+  return {
+    size:one(v.size,sizes,defaults.size),
+    theme:one(v.theme,themes,defaults.theme),
+    spacing:typeof v.spacing==='boolean'?v.spacing:defaults.spacing,
+    width:one(v.width,widths,defaults.width),
+    font:one(v.font,fonts,defaults.font),
+    density:one(v.density,densities,defaults.density),
+  };
 }
 
 export function readPreferences():Preferences {
-  try {
-    const stored=JSON.parse(localStorage.getItem(storageKey)||'null');
-    if(isPreferences(stored)) return stored;
-  } catch { /* Defaults work when storage is unavailable. */ }
-  return defaults;
+  try { return fromStored(JSON.parse(localStorage.getItem(storageKey)||'null')); }
+  catch { return defaults; }
 }
 
 export function applyPreferences(p:Preferences) {
   const root=document.documentElement;
   root.dataset.theme=p.theme;root.dataset.textSize=p.size;root.dataset.spacing=String(p.spacing);
+  root.dataset.width=p.width;root.dataset.font=p.font;root.dataset.density=p.density;
 }
 
 export function savePreferences(p:Preferences) {
@@ -34,19 +52,32 @@ export function savePreferences(p:Preferences) {
   try { localStorage.setItem(storageKey,JSON.stringify(p)); } catch { /* Settings still work for this visit. */ }
 }
 
-/** Change only the theme, leaving the text size and spacing the visitor chose untouched. */
-export function setTheme(theme:Theme) { savePreferences({...readPreferences(),theme}); }
-
-// <html data-theme> is the single source of truth, so the header toggle and the reading panel
-// never disagree about the current theme no matter which one the visitor used.
-function subscribe(notify:()=>void) {
-  const observer=new MutationObserver(notify);
-  observer.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
-  return ()=>observer.disconnect();
+/** Change one setting, leaving every other choice the reader made untouched. */
+export function setPreference<K extends keyof Preferences>(key:K,value:Preferences[K]) {
+  savePreferences({...readPreferences(),[key]:value});
 }
 
+// The data attributes on <html> are the single source of truth, so controls in the header, the
+// reading panel and the page body never disagree about the current setting.
+function watch(attribute:string) {
+  return (notify:()=>void)=>{
+    const observer=new MutationObserver(notify);
+    observer.observe(document.documentElement,{attributes:true,attributeFilter:[attribute]});
+    return ()=>observer.disconnect();
+  };
+}
+
+const themeStore=watch('data-theme');
+const densityStore=watch('data-density');
+
 export function useTheme():Theme {
-  return useSyncExternalStore<Theme>(subscribe,
-    ()=>{const value=document.documentElement.dataset.theme;return themes.includes(value as Theme)?value as Theme:defaults.theme;},
+  return useSyncExternalStore<Theme>(themeStore,
+    ()=>one(document.documentElement.dataset.theme,themes,defaults.theme),
     ()=>defaults.theme);
+}
+
+export function useDensity():Density {
+  return useSyncExternalStore<Density>(densityStore,
+    ()=>one(document.documentElement.dataset.density,densities,defaults.density),
+    ()=>defaults.density);
 }

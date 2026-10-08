@@ -59,3 +59,14 @@ export const references=[
  ['A11yJSON / Sozialhelden','https://github.com/sozialhelden/a11yjson'],
  ['WCAG 2.2','https://www.w3.org/TR/WCAG22/']
 ];
+
+/**
+ * First sentence and remainder. Summary shows the opening line of each section, so there is no
+ * second copy of the text to keep in step with the first.
+ */
+export function splitLead(body:string):[string,string] {
+  const match=/^(.*?[.!?])\s+(.*)$/s.exec(body);
+  return match ? [match[1],match[2]] : [body,''];
+}
+
+export const slug=(heading:string)=>heading.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
