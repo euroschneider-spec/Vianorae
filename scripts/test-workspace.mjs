@@ -268,8 +268,10 @@ try {
     await adminPage.getByLabel('Decision',{exact:true}).selectOption('suspended');
     await adminPage.getByLabel('Message for the applicant',{exact:true}).fill('Access suspended until the representative mandate is reconfirmed.');
     await adminPage.getByRole('button',{name:'Record decision',exact:true}).click();
-    await applicant.goto(`${base}/en/workspace`);await expect(applicant).toHaveURL(/\/en\/account$/);
+    await expect(adminPage.getByText('Organisation access suspended',{exact:false}).first()).toBeVisible();
+    await applicant.goto(`${base}/en/account`);
     await expect(applicant.getByRole('heading',{name:'Organisation access suspended',exact:true})).toBeVisible();
+    await applicant.goto(`${base}/en/workspace`);await expect(applicant).toHaveURL(/\/en\/account$/);
     await expect(applicant.getByRole('link',{name:'Organisation workspace',exact:true})).toHaveCount(0);
   });
   for(const locale of ['en','ro','de']) {
@@ -280,10 +282,14 @@ try {
       assert.equal(await applicant.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);await applicant.setViewportSize({width:1280,height:900});
     });
   }
-  await check('account menu provides sign-in, organisation account and protected administration entry',async()=>{
-    await adminPage.goto(`${base}/en`);await adminPage.locator('.account-link').click();
-    await adminPage.locator('.account-dropdown').getByRole('link',{name:'Platform administration',exact:true}).click();await expect(adminPage).toHaveURL(/\/en\/admin\/organisations$/);
-    await applicant.goto(`${base}/en`);await applicant.locator('.account-link').click();await applicant.locator('.account-dropdown').getByRole('link',{name:'Organisation account',exact:true}).click();await expect(applicant).toHaveURL(/\/en\/account$/);
+  await check('the header offers one sign-in and advertises no tier-specific destination',async()=>{
+    for(const page of [adminPage,applicant]) {
+      await page.goto(`${base}/en`);
+      await expect(page.locator('.header-login')).toHaveAttribute('href','/en/login');
+      await expect(page.locator('.site-header').getByRole('link',{name:'Platform administration',exact:true})).toHaveCount(0);
+      await expect(page.locator('.site-header').getByRole('link',{name:'Organisation account',exact:true})).toHaveCount(0);
+    }
+    await adminPage.goto(`${base}/en/admin/organisations`);await expect(adminPage).toHaveURL(/\/en\/admin\/organisations$/);
   });
   await check('signup success states email confirmation and explicitly distinguishes unsubmitted organisation request',async()=>{
     await applicant.goto(`${base}/en/register`);await fillApplication();await applicant.getByLabel('Work email',{exact:true}).fill('signup@example.test');await applicant.getByLabel('Password',{exact:true}).fill('Fixture-only-passphrase-123');
