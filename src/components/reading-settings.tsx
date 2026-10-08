@@ -11,12 +11,13 @@ const defaults:Preferences={size:'normal',theme:'light',spacing:false};
 const key='vianorae:reading:v1';
 function apply(p:Preferences) { const root=document.documentElement; root.dataset.theme=p.theme; root.dataset.textSize=p.size; root.dataset.spacing=String(p.spacing); }
 
-const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(value,Math.max(min,max)));
+export const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(value,Math.max(min,max)));
+// Dock to the bottom-left corner, clear of body copy that runs mid-page.
+export const launcherTop=(viewportHeight:number,buttonHeight:number)=>clamp(viewportHeight-buttonHeight-24,8,viewportHeight-buttonHeight-8);
 function placeLauncher(button:HTMLButtonElement) {
   const bounds=button.getBoundingClientRect();
-  // Dock to the viewport edge, independently of media and page content.
   button.style.left='0px';
-  button.style.top=`${clamp((window.innerHeight-bounds.height)/2,8,window.innerHeight-bounds.height-8)}px`;
+  button.style.top=`${launcherTop(window.innerHeight,bounds.height)}px`;
 }
 
 function movePanel(panel:HTMLDialogElement,left:number,top:number) {
