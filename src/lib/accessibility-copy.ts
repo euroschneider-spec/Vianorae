@@ -15,6 +15,7 @@ const en={
   display:'Guide display',stepByStep:'Step by step',fullText:'Complete guide in text',textTitle:'Your complete visit guide',
   textIntro:'All visit steps are together below. Nothing needs to be heard, played or timed to read the guide.',
   photoDescription:'Photograph description',
+  visitorView:'What a visitor sees',guideOptions:'Guide options',closeOptions:'Close guide options',
 };
 type AccessCopy={ [K in keyof typeof en]:string };
 const ro:AccessCopy={
@@ -33,6 +34,7 @@ const ro:AccessCopy={
   display:'Afișarea ghidului',stepByStep:'Pas cu pas',fullText:'Ghid complet în text',textTitle:'Ghidul complet al vizitei',
   textIntro:'Toți pașii vizitei sunt împreună mai jos. Poți citi ghidul fără să asculți, să pornești o înregistrare sau să urmărești un cronometru.',
   photoDescription:'Descrierea fotografiei',
+  visitorView:'Ce vede un vizitator',guideOptions:'Opțiuni pentru ghid',closeOptions:'Închide opțiunile ghidului',
 };
 const de:AccessCopy={
   movePanel:'Lesepanel verschieben',moveLeft:'Nach links verschieben',moveRight:'Nach rechts verschieben',moveUp:'Nach oben verschieben',moveDown:'Nach unten verschieben',resetPosition:'Panelposition zurücksetzen',popupHint:'Sie können bei geöffnetem Panel scrollen. Ziehen Sie am Griff oder klicken Sie ihn für Verschiebebuttons an; auch die Pfeiltasten bewegen das Panel.',
@@ -50,5 +52,6 @@ const de:AccessCopy={
   display:'Guide-Darstellung',stepByStep:'Schritt für Schritt',fullText:'Vollständiger Guide als Text',textTitle:'Ihr vollständiger Besuchs-Guide',
   textIntro:'Alle Besuchsschritte stehen unten zusammen. Sie können den Guide ohne Ton, Wiedergabe oder Zeitvorgabe lesen.',
   photoDescription:'Fotobeschreibung',
+  visitorView:'Was Besucher sehen',guideOptions:'Guide-Optionen',closeOptions:'Guide-Optionen schließen',
 };
 export const getAccessCopy=(locale:Locale):AccessCopy=>({en,ro,de})[locale];

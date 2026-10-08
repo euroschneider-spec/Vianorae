@@ -5,11 +5,7 @@ import { SlidersHorizontal, X, GripHorizontal, ArrowLeft, ArrowRight, ArrowUp, A
 import { getCopy, type Locale } from '@/lib/i18n';
 import { getAccessCopy } from '@/lib/accessibility-copy';
 import { ReadAloud } from './read-aloud';
-
-type Preferences={size:'normal'|'large'|'larger';theme:'light'|'dark'|'contrast';spacing:boolean};
-const defaults:Preferences={size:'normal',theme:'light',spacing:false};
-const key='vianorae:reading:v1';
-function apply(p:Preferences) { const root=document.documentElement; root.dataset.theme=p.theme; root.dataset.textSize=p.size; root.dataset.spacing=String(p.spacing); }
+import { applyPreferences, defaults, isPreferences, savePreferences, storageKey, useTheme, type Preferences } from '@/lib/reading-prefs';
 
 export const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(value,Math.max(min,max)));
 // Dock to the bottom-left corner, clear of body copy that runs mid-page.
@@ -33,17 +29,15 @@ function placePanel(panel:HTMLDialogElement,button:HTMLButtonElement) {
 
 export function ReadingSettingsProvider({locale,children}:{locale:Locale;children:React.ReactNode}) {
   const t=getCopy(locale);const a=getAccessCopy(locale);const path=usePathname();
-  const [prefs,setPrefs]=useState(defaults);const [isOpen,setOpen]=useState(false);const [moveControls,setMoveControls]=useState(false);const [audioOpen,setAudioOpen]=useState(false);
+  const [stored,setPrefs]=useState(defaults);const theme=useTheme();const prefs:Preferences={...stored,theme};const [isOpen,setOpen]=useState(false);const [moveControls,setMoveControls]=useState(false);const [audioOpen,setAudioOpen]=useState(false);
   const dialog=useRef<HTMLDialogElement>(null);const trigger=useRef<HTMLButtonElement>(null);
   const moved=useRef(false);const restoreFocus=useRef(true);const dragged=useRef(false);
   const drag=useRef<{x:number;y:number;left:number;top:number}|null>(null);
   useEffect(()=>{
     let frame:number|undefined;
     try {
-      const stored=JSON.parse(localStorage.getItem(key)||'null');
-      if(stored && ['normal','large','larger'].includes(stored.size) && ['light','dark','contrast'].includes(stored.theme) && typeof stored.spacing==='boolean') {
-        apply(stored);frame=requestAnimationFrame(()=>setPrefs(stored));
-      }
+      const saved=JSON.parse(localStorage.getItem(storageKey)||'null');
+      if(isPreferences(saved)) { applyPreferences(saved);frame=requestAnimationFrame(()=>setPrefs(saved)); }
     } catch { /* Defaults work when storage is unavailable. */ }
     return()=>{if(frame!==undefined) cancelAnimationFrame(frame);};
   },[]);
@@ -70,7 +64,7 @@ export function ReadingSettingsProvider({locale,children}:{locale:Locale;childre
     const observer=new ResizeObserver(resize);if(dialog.current)observer.observe(dialog.current);
     return()=>{observer.disconnect();window.removeEventListener('resize',resize);window.removeEventListener('keydown',escape);document.removeEventListener('pointerdown',outside);};
   },[isOpen]);
-  function update(next:Preferences) {setPrefs(next);apply(next);try{localStorage.setItem(key,JSON.stringify(next));}catch{/* Settings still work for this visit. */}}
+  function update(next:Preferences) {setPrefs(next);savePreferences(next);}
   function close() {restoreFocus.current=true;dialog.current?.close();}
   function open() {
     if(!dialog.current || !trigger.current) return;

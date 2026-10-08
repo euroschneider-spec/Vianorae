@@ -20,22 +20,26 @@ async function mockSpeech(page:Page,locale='en',unsupported=false) {
 }
 const fixture=(page:Page)=>page.evaluate(()=>{const s=(window as unknown as {__speech:SpeechFixture}).__speech;return {texts:s.texts,lang:s.lang,rate:s.rate,paused:s.paused,resumed:s.resumed,cancelled:s.cancelled,pausedState:s.pausedState};});
 const copy={
-  en:{start:'Read aloud',pause:'Pause',resume:'Resume',stop:'Stop',speed:'Reading speed',next:'Next step',full:'Complete guide in text',playing:'Reading aloud.',paused:'Reading paused.',finished:'Reading finished.'},
-  ro:{start:'Citește cu voce',pause:'Pauză',resume:'Continuă',stop:'Oprește',speed:'Viteza lecturii',next:'Pasul următor',full:'Ghid complet în text',playing:'Lectură în curs.',paused:'Lectură în pauză.',finished:'Lectură încheiată.'},
-  de:{start:'Vorlesen',pause:'Pause',resume:'Fortsetzen',stop:'Stoppen',speed:'Lesegeschwindigkeit',next:'Nächster Schritt',full:'Vollständiger Guide als Text',playing:'Wird vorgelesen.',paused:'Vorlesen pausiert.',finished:'Vorlesen beendet.'},
+  en:{start:'Read aloud',pause:'Pause',resume:'Resume',stop:'Stop',speed:'Reading speed',next:'Next step',full:'Complete guide in text',playing:'Reading aloud.',paused:'Reading paused.',finished:'Reading finished.',options:'Guide options',closeOptions:'Close guide options'},
+  ro:{start:'Citește cu voce',pause:'Pauză',resume:'Continuă',stop:'Oprește',speed:'Viteza lecturii',next:'Pasul următor',full:'Ghid complet în text',playing:'Lectură în curs.',paused:'Lectură în pauză.',finished:'Lectură încheiată.',options:'Opțiuni pentru ghid',closeOptions:'Închide opțiunile ghidului'},
+  de:{start:'Vorlesen',pause:'Pause',resume:'Fortsetzen',stop:'Stoppen',speed:'Lesegeschwindigkeit',next:'Nächster Schritt',full:'Vollständiger Guide als Text',playing:'Wird vorgelesen.',paused:'Vorlesen pausiert.',finished:'Vorlesen beendet.',options:'Guide-Optionen',closeOptions:'Guide-Optionen schließen'},
 };
 for(const locale of ['en','ro','de'] as const) {
   test(`${locale}: optional guide speech supports pause, resume, stop, speed and all guide content`,async({page})=>{
-    await mockSpeech(page,locale);await page.goto(`/${locale}/example-guide`);const t=copy[locale];const audio=page.locator('.guide-display .read-aloud');
+    await mockSpeech(page,locale);await page.goto(`/${locale}/example-guide`);const t=copy[locale];
+    const openOptions=()=>page.getByRole('button',{name:t.options,exact:true}).click();
+    const closeOptions=()=>page.getByRole('button',{name:t.closeOptions,exact:true}).click();
+    await openOptions();const audio=page.locator('.gg-sheet .read-aloud');
     expect((await fixture(page)).texts).toEqual([]);
     await audio.getByLabel(t.speed,{exact:true}).selectOption('0.75');await audio.getByRole('button',{name:t.start,exact:true}).click();
     await expect(audio.getByRole('status')).toHaveText(t.playing);expect((await fixture(page)).lang).toBe(`${locale}-TEST`);expect((await fixture(page)).rate).toBe(.75);
     await audio.getByRole('button',{name:t.pause,exact:true}).click();await expect(audio.getByRole('status')).toHaveText(t.paused);
     await audio.getByRole('button',{name:t.resume,exact:true}).click();expect((await fixture(page)).resumed).toBe(2);
-    await page.locator('.guide-navigation').getByRole('button').last().click();await expect(audio.getByRole('button',{name:t.stop,exact:true})).toBeDisabled();
+    await closeOptions();await page.locator('.guide-navigation').getByRole('button').last().click();await openOptions();
+    await expect(audio.getByRole('button',{name:t.stop,exact:true})).toBeDisabled();
     await audio.getByRole('button',{name:t.start,exact:true}).click();await audio.getByRole('button',{name:t.pause,exact:true}).click();await audio.getByRole('button',{name:t.stop,exact:true}).click();
     await audio.getByRole('button',{name:t.start,exact:true}).click();expect((await fixture(page)).pausedState).toBe(false);await audio.getByRole('button',{name:t.stop,exact:true}).click();
-    await page.getByRole('button',{name:t.full,exact:true}).click();await audio.getByRole('button',{name:t.start,exact:true}).click();
+    await page.getByRole('button',{name:t.full,exact:true}).click();await openOptions();await audio.getByRole('button',{name:t.start,exact:true}).click();
     await page.evaluate(()=>(window as unknown as {__speech:SpeechFixture}).__speech.finish());await expect(audio.getByRole('status')).toHaveText(t.finished);
     const spoken=(await fixture(page)).texts.join('\n');
     for(const content of await page.locator('.guide-text-steps h3,.guide-text-steps>li>p.preserve-lines,.guide-info-text p,.guide-text-steps dd').allTextContents())expect(spoken).toContain(content);
@@ -65,13 +69,13 @@ test('one control docks to the left screen edge while the page scrolls and reflo
   }
 });
 test('missing language voices never fall back to a different language and can be retried',async({page})=>{
-  await mockSpeech(page,'en');await page.goto('/ro/example-guide');const audio=page.locator('.guide-display .read-aloud');
+  await mockSpeech(page,'en');await page.goto('/ro/example-guide');await page.getByRole('button',{name:copy.ro.options,exact:true}).click();const audio=page.locator('.gg-sheet .read-aloud');
   await audio.getByRole('button',{name:copy.ro.start,exact:true}).click();await expect(audio.getByRole('status')).toContainText('voce în română');expect((await fixture(page)).texts).toEqual([]);
   await page.evaluate(()=>{const s=(window as unknown as {__speech:SpeechFixture}).__speech;s.voices[0]={...s.voices[0],lang:'ro-RO'};});
   await audio.getByRole('button',{name:copy.ro.start,exact:true}).click();expect((await fixture(page)).lang).toBe('ro-RO');
 });
 test('unsupported speech leaves the complete readable guide and screen-reader guidance available',async({page})=>{
-  await mockSpeech(page,'en',true);await page.goto('/en/example-guide');const audio=page.locator('.guide-display .read-aloud');
+  await mockSpeech(page,'en',true);await page.goto('/en/example-guide');await page.getByRole('button',{name:copy.en.options,exact:true}).click();const audio=page.locator('.gg-sheet .read-aloud');
   await expect(audio.getByRole('button',{name:copy.en.start,exact:true})).toBeDisabled();await expect(audio.getByRole('status')).toContainText('screen reader');
   await page.getByRole('button',{name:copy.en.full,exact:true}).click();await expect(page.locator('.guide-text-steps>li')).toHaveCount(5);
 });
@@ -80,7 +84,7 @@ test('page reader excludes controls and form values, stops on panel close and ca
   await page.locator('.floating-reading').click();const dialog=page.getByRole('dialog');await dialog.locator('.reading-audio-details summary').click();const pageAudio=dialog.locator('.read-aloud');
   await pageAudio.getByRole('button',{name:copy.en.start,exact:true}).click();await page.evaluate(()=>(window as unknown as {__speech:SpeechFixture}).__speech.finish());
   const spoken=(await fixture(page)).texts.join('\n');expect(spoken).toContain('Let’s make visits clearer.');expect(spoken).not.toContain('Do not narrate this input value');
-  await page.keyboard.press('Escape');await page.goto('/en/example-guide');const guideAudio=page.locator('.guide-display .read-aloud');
+  await page.keyboard.press('Escape');await page.goto('/en/example-guide');await page.getByRole('button',{name:copy.en.options,exact:true}).click();const guideAudio=page.locator('.gg-sheet .read-aloud');
   await guideAudio.getByRole('button',{name:copy.en.start,exact:true}).click();await page.locator('.floating-reading').click();await dialog.locator('.reading-audio-details summary').click();
   await pageAudio.getByRole('button',{name:copy.en.start,exact:true}).click();await expect(guideAudio.getByRole('button',{name:copy.en.stop,exact:true})).toBeDisabled();
   await page.keyboard.press('Escape');expect((await fixture(page)).cancelled).toBeGreaterThan(0);

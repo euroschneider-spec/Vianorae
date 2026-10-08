@@ -7,7 +7,7 @@ for(const locale of ['en','ro','de']) {
 for(const path of ['/en','/en/example-guide','/en/contact','/en/dashboard/builder','/ro','/de']) {
  test(`WCAG A/AA checks ${path}`,async({page})=>{await page.goto(path);const results=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']).analyze();expect(results.violations).toEqual([]);});
 }
-test('guide navigation, skip and completion work by keyboard',async({page})=>{await page.goto('/en/example-guide');await expect(page.getByRole('heading',{name:'The main entrance',exact:true})).toBeVisible();const next=page.getByRole('button',{name:'Next step',exact:true});await next.focus();await page.keyboard.press('Enter');await expect(page.getByRole('heading',{name:'Reception & the foyer',exact:true})).toBeFocused();await page.getByRole('button',{name:'The quiet room',exact:false}).click();await expect(page.getByRole('heading',{name:'The quiet room',exact:true})).toBeVisible();await page.getByRole('button',{name:'Finish the guide'}).click();await expect(page.getByRole('heading',{name:'You have explored the guide.'})).toBeFocused();await page.getByRole('button',{name:'Start again'}).click();await expect(page.getByRole('heading',{name:'The main entrance',exact:true})).toBeVisible();});
+test('guide navigation, skip and completion work by keyboard',async({page})=>{await page.goto('/en/example-guide');await expect(page.getByRole('heading',{name:'The main entrance',exact:true})).toBeVisible();const next=page.getByRole('button',{name:'Next step',exact:true});await next.focus();await page.keyboard.press('Enter');await expect(page.getByRole('heading',{name:'Reception & the foyer',exact:true})).toBeFocused();await page.getByRole('button',{name:'Guide options',exact:true}).click();await page.getByRole('button',{name:'The quiet room',exact:false}).click();await expect(page.getByRole('heading',{name:'The quiet room',exact:true})).toBeVisible();await page.getByRole('button',{name:'Finish the guide'}).click();await expect(page.getByRole('heading',{name:'You have explored the guide.'})).toBeFocused();await page.getByRole('button',{name:'Start again'}).click();await expect(page.getByRole('heading',{name:'The main entrance',exact:true})).toBeVisible();});
 test('local draft persists into preview and public example remains fictional',async({page})=>{await page.goto('/en/dashboard/builder');await page.getByLabel('Zone title',{exact:true}).first().fill('My entrance draft');await page.getByRole('button',{name:'Save draft'}).click();await expect(page.getByRole('status')).toHaveText('Draft saved in this browser.');await page.reload();await expect(page.getByLabel('Zone title',{exact:true}).first()).toHaveValue('My entrance draft');await page.getByRole('link',{name:'Preview your draft',exact:true}).last().click();await expect(page.getByRole('heading',{name:'My entrance draft'})).toBeVisible();await page.goto('/en/example-guide');await expect(page.getByRole('heading',{name:'The main entrance',exact:true})).toBeVisible();await page.goto('/ro/dashboard/builder');await expect(page.getByLabel('Titlul zonei',{exact:true}).first()).toHaveValue('Intrarea principală');});
 test('corrupt local draft falls back safely',async({page})=>{await page.goto('/en/dashboard/builder');await page.evaluate(()=>localStorage.setItem('vianorae:demo-draft:v1:en','{"schemaVersion":1,"zones":null}'));await page.reload();await expect(page.getByLabel('Zone title',{exact:true}).first()).toHaveValue('The main entrance');});
 test('catalog filters distinguish museum from unavailable categories',async({page})=>{await page.goto('/en/explore');await page.getByLabel('Category',{exact:true}).selectOption('theatre');await expect(page.getByRole('status')).toHaveText('No guide matches these filters.');await page.getByLabel('Category',{exact:true}).selectOption('museum');await expect(page.getByRole('link',{name:'Open guide',exact:true})).toBeVisible();});
@@ -37,7 +37,7 @@ test('photo upload persists with accessible metadata into the local preview only
  await page.goto('/en/dashboard/preview');
  await expect(page.getByRole('img',{name:'A wide entrance with glass doors and a bench.',exact:true})).toHaveAttribute('src',/^blob:/);
  await page.goto('/en/example-guide');
- await expect(page.locator('.guide-image')).toHaveAttribute('src',/illustrations/);
+ await expect(page.locator('.gg-photo img')).toHaveAttribute('src',/illustrations/);
  await page.goto('/ro/dashboard/builder');
  await expect(page.getByLabel('Descrierea imaginii (text alternativ)')).toHaveCount(0);
  await page.goto('/en/dashboard/builder');
@@ -69,7 +69,7 @@ test('publication review requires a saved version and explicit acknowledgements;
 
 test('registration is discoverable and inactive without the separate auth configuration',async({page})=>{
  const posts:string[]=[];page.on('request',request=>{if(request.method()==='POST')posts.push(request.url());});
- await page.goto('/ro');await page.locator('.account-link').click();await page.locator('.account-dropdown').getByRole('link',{name:'Solicită acces pentru organizație',exact:true}).click();await expect(page).toHaveURL(/\/ro\/register$/);
+ await page.goto('/ro');await page.locator('.site-footer').getByRole('link',{name:'Solicită acces pentru organizație',exact:true}).click();await expect(page).toHaveURL(/\/ro\/register$/);
  await expect(page.getByRole('heading',{name:'Solicită acces pentru organizație'})).toBeVisible();
  await expect(page.getByText('Organizația ta își asumă întreaga responsabilitate',{exact:false})).toBeVisible();
  await expect(page.getByLabel('Tipul organizației')).toContainText('Hotel');
@@ -88,11 +88,14 @@ for(const path of ['/en/register','/ro/register','/de/register','/en/login']){
 }
 
 
-test('mobile account menu stays inside viewport and has an accessible name',async({page})=>{
+// One sign-in serves every tier: landingPath() routes platform administrators, organisation
+// members and everyone else after authentication, so the header offers no separate doors.
+test('the header offers a single sign-in that fits a narrow viewport',async({page})=>{
  await page.setViewportSize({width:320,height:800});await page.goto('/ro');
- await page.locator('.account-menu summary').click();
- await expect(page.locator('.account-menu summary')).toHaveAccessibleName('Cont');
- const bounds=await page.locator('.account-dropdown').boundingBox();
+ const signIn=page.locator('.header-login');
+ await expect(signIn).toHaveAccessibleName('Autentificare');
+ const bounds=await signIn.boundingBox();
  expect(bounds).not.toBeNull();expect(bounds!.x).toBeGreaterThanOrEqual(0);expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(320);
- await expect(page.locator('.account-dropdown').getByRole('link',{name:'Administrare platformă'})).toBeVisible();
+ await expect(page.locator('.site-header').getByRole('link',{name:'Administrare platformă'})).toHaveCount(0);
+ await signIn.click();await expect(page).toHaveURL(/\/ro\/login$/);
 });
