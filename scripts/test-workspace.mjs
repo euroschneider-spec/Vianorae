@@ -23,7 +23,8 @@ const base='http://localhost:3011';
 async function login(page,owner=1) {
   await page.goto(`${base}/en/login`);await page.getByLabel('Work email',{exact:true}).fill(`owner${owner}@example.test`);
   await page.getByLabel('Password',{exact:true}).fill('Fixture-only-passphrase-123');
-  await page.getByRole('button',{name:'Sign in',exact:true}).click();await page.waitForURL('**/en/account');
+  await page.getByRole('button',{name:'Sign in',exact:true}).click();
+  await page.waitForURL(/\/en\/(account|workspace|admin\/organisations)$/);
 }
 const saved=page=>expect(page.locator('.status-message')).toContainText('Draft saved online');
 const save=async page=>{await page.getByRole('button',{name:'Save online',exact:true}).click();await saved(page);};
@@ -42,7 +43,7 @@ try {
     assert.equal((await context.request.get(`${base}/api/workspace/photos?key=anything`)).status(),401);
   });
   await check('verified owner signs in and opens their organisation workspace',async()=>{
-    await login(page);await page.getByRole('link',{name:'Organisation workspace',exact:true}).click();
+    await login(page);await expect(page).toHaveURL(/\/en\/workspace$/);
     await expect(page.getByText('Fixture museum 1',{exact:true})).toBeVisible();
     await page.getByRole('link',{name:'Create a location',exact:true}).click();
   });
@@ -211,7 +212,7 @@ try {
     await applicant.goto(`${base}/en/account`);await expect(applicant.getByRole('heading',{name:'Awaiting manual verification',exact:true})).toBeVisible();
   });
   await check('platform administrator sees pending request and manual evidence controls',async()=>{
-    await login(adminPage,3);await adminPage.getByRole('link',{name:'Review organisation requests',exact:true}).click();
+    await login(adminPage,3);await expect(adminPage).toHaveURL(/\/en\/admin\/organisations$/);
     await expect(adminPage.getByRole('heading',{name:'Verified fixture museum',exact:true})).toBeVisible();
     assert.equal((await adminContext.request.get(base+mandatePath)).status(),200);
     await expect(adminPage.getByLabel('I opened and checked this mandate document: mandate.pdf',{exact:true})).toHaveJSProperty('required',true);
@@ -264,6 +265,7 @@ try {
     await adminPage.screenshot({path:'docs/organisation-verification-preview.png',fullPage:true});
   });
   await check('suspending an approved organisation removes access without signing the applicant out',async()=>{
+    await adminPage.getByLabel('Decision',{exact:true}).selectOption('suspended');
     await adminPage.getByLabel('Message for the applicant',{exact:true}).fill('Access suspended until the representative mandate is reconfirmed.');
     await adminPage.getByRole('button',{name:'Record decision',exact:true}).click();
     await applicant.goto(`${base}/en/workspace`);await expect(applicant).toHaveURL(/\/en\/account$/);
