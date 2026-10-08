@@ -11,6 +11,8 @@ import { applicationFromForm, getVerificationCopy } from '@/lib/verification';
 import { uuidPattern } from '@/lib/workspace';
 import { getEvidenceCopy } from '@/lib/mandate-evidence';
 import { evidenceReady, verificationReady } from '@/lib/verification-server';
+import { landingPath } from '@/lib/roles';
+import { getViewer } from '@/lib/viewer-server';
 
 export type AuthState = { message: string; confirmation?:boolean };
 const text = (form: FormData, key: string) => String(form.get(key) || '').trim();
@@ -26,7 +28,7 @@ export async function authenticate(locale: string, mode: 'register' | 'login', _
   const application = mode === 'register' ? applicationFromForm(form,locale) : null;
   if (mode === 'register' && !application) return {message:t.invalidFields};
 
-  let signedIn = false;let loginError=t.authError;
+  let signedIn = false;let loginError=t.authError;let destination=`/${locale}/account`;
   try {
     const supabase = await createClient();
     if (mode === 'register' && application) {
@@ -41,10 +43,16 @@ export async function authenticate(locale: string, mode: 'register' | 'login', _
       } });
       return error ? {message:authErrorMessage(locale,error.code)} : {message:getAuthFeedback(locale).received,confirmation:true};
     }
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     signedIn = !error;loginError=authErrorMessage(locale,error?.code,true);
+    // Each tier starts where its work is. The destination is a convenience only; every
+    // page behind it re-checks the role itself.
+    if (signedIn && data.user) {
+      const viewer = await getViewer(supabase, data.user.id);
+      if (viewer) destination = landingPath(viewer, locale);
+    }
   } catch { return { message: t.authError }; }
-  if (signedIn) redirect(`/${locale}/account`);
+  if (signedIn) redirect(destination);
   return { message: loginError };
 }
 

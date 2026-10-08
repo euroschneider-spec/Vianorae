@@ -14,6 +14,7 @@ import { MandateDocuments } from '@/components/mandate-documents';
 import { getEvidenceCopy, type MandateDocument } from '@/lib/mandate-evidence';
 import { evidenceReady, verificationReady } from '@/lib/verification-server';
 import { getVerificationCopy, type OrganizationApplication } from '@/lib/verification';
+import { getViewer } from '@/lib/viewer-server';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Organisation account', robots: { index: false, follow: false } };
@@ -24,15 +25,12 @@ export default async function Account({ params }: { params: Promise<{ locale: st
   const supabase=await createClient();const {data:{user},error}=await supabase.auth.getUser();
   if(error || !user || !user.email_confirmed_at || user.is_anonymous) redirect(`/${locale}/login`);
   if(!await verificationReady(supabase)) return <main id="main-content" className="container verification-page"><div className="page-heading"><h1>{t.account}</h1></div><p className="notice" role="status">{v.setup}</p><form action={signOut.bind(null,locale)}><button className="text-button">{t.signOut}</button></form></main>;
-  const [orgResult,applicationResult,adminResult,roleResult]=await Promise.all([
-    supabase.from('organizations').select('id,name').eq('approval_status','approved').order('created_at').limit(50),
+  const [viewer,applicationResult]=await Promise.all([
+    getViewer(supabase,user.id),
     supabase.from('organization_applications').select('*').eq('applicant_id',user.id).maybeSingle(),
-    supabase.rpc('is_platform_admin'),
-    supabase.from('organization_members').select('organization_id').eq('user_id',user.id).limit(50),
   ]);
-  if(orgResult.error || applicationResult.error || adminResult.error || roleResult.error) return <main id="main-content" className="container verification-page"><div className="page-heading"><h1>{t.account}</h1></div><p role="alert">{t.authError}</p></main>;
-  const ownIds=new Set((roleResult.data||[]).map(row=>row.organization_id));
-  const ownOrganizations=(orgResult.data||[]).filter(row=>ownIds.has(row.id));
+  if(!viewer || applicationResult.error) return <main id="main-content" className="container verification-page"><div className="page-heading"><h1>{t.account}</h1></div><p role="alert">{t.authError}</p></main>;
+  const ownOrganizations=viewer.memberships.map(membership=>({id:membership.organisation,name:membership.name}));
   const application=applicationResult.data as OrganizationApplication|null;
   const documentsEnabled=await evidenceReady(supabase);
   const documentsResult=documentsEnabled ? await supabase.from('organization_evidence_documents').select('*').eq('applicant_id',user.id).order('created_at').limit(30) : null;
@@ -48,7 +46,7 @@ export default async function Account({ params }: { params: Promise<{ locale: st
     website:field('website',500),country:field('country',2),registry:field('registry',300),representativeRole:field('representativeRole',160),authorization:field('authorization',2000),
   };
   return <main id="main-content" className="container verification-page"><div className="page-heading"><h1>{t.account}</h1></div><div className="content-body">
-    {adminResult.data===true && <p><Link className="button" href={`/${locale}/admin/organisations`}>{v.admin}</Link></p>}
+    {viewer.isPlatformAdmin && <p><Link className="button" href={`/${locale}/admin/organisations`}>{v.admin}</Link></p>}
     {!application && !ownOrganizations.length && <p className="auth-feedback" role="status">{getAuthFeedback(locale).confirmed}</p>}
     <ResponsibilityNotice locale={locale}/>
     {application && <section className="notice" aria-labelledby="application-status"><h2 id="application-status">{v.statuses[application.status]}</h2><p>{application.organization_name}</p>{application.status==='pending' && <p>{getAuthFeedback(locale).pending}</p>}{application.applicant_note && <p>{application.applicant_note}</p>}{application.status!=='approved' && <p>{v.gate}</p>}</section>}

@@ -6,6 +6,7 @@ import { authConfigured } from './supabase/config';
 import { newZone, uuidPattern, type PlaceDraft, type PlaceSummary } from './workspace';
 import type { SensoryProfile } from './demo';
 import { verificationReady } from './verification-server';
+import { isOrganisationRole } from './roles';
 
 export const workspaceConfigured = () => authConfigured() && process.env.VIANORAE_WORKSPACE_ENABLED === '1';
 export async function workspaceSession(locale: Locale) {
@@ -19,7 +20,7 @@ export async function workspaceSession(locale: Locale) {
     supabase.from('organization_members').select('organization_id,role').eq('user_id',user.id).limit(50),
   ]);
   if (orgResult.error || roleResult.error) throw new Error('workspace-unavailable');
-  const editable = new Set((roleResult.data || []).filter(row => ['owner','admin','editor'].includes(row.role)).map(row => row.organization_id));
+  const editable = new Set((roleResult.data || []).filter(row => isOrganisationRole(row.role)).map(row => row.organization_id));
   const organisations = (orgResult.data || []).filter(row => editable.has(row.id)) as {id:string;name:string}[];
   if(!organisations.length) redirect(`/${locale}/account`);
   return { supabase, user, organisations };
