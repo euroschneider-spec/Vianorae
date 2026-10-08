@@ -1,3 +1,4 @@
+import { getAuthFeedback } from '@/lib/auth-feedback';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getCopy, isLocale } from '@/lib/i18n';
@@ -9,7 +10,9 @@ import { OrganisationForm } from '@/components/organisation-form';
 import { ResponsibilityNotice } from '@/components/responsibility-notice';
 import { workspaceConfigured } from '@/lib/workspace-server';
 import { getWorkspaceCopy } from '@/lib/workspace';
-import { verificationReady } from '@/lib/verification-server';
+import { MandateDocuments } from '@/components/mandate-documents';
+import { getEvidenceCopy, type MandateDocument } from '@/lib/mandate-evidence';
+import { evidenceReady, verificationReady } from '@/lib/verification-server';
 import { getVerificationCopy, type OrganizationApplication } from '@/lib/verification';
 
 export const dynamic = 'force-dynamic';
@@ -31,6 +34,10 @@ export default async function Account({ params }: { params: Promise<{ locale: st
   const ownIds=new Set((roleResult.data||[]).map(row=>row.organization_id));
   const ownOrganizations=(orgResult.data||[]).filter(row=>ownIds.has(row.id));
   const application=applicationResult.data as OrganizationApplication|null;
+  const documentsEnabled=await evidenceReady(supabase);
+  const documentsResult=documentsEnabled ? await supabase.from('organization_evidence_documents').select('*').eq('applicant_id',user.id).order('created_at').limit(30) : null;
+  const documents=((documentsResult?.data||[]) as MandateDocument[]).filter(doc=>doc.uploaded_at && application?.evidence_document_ids?.includes(doc.id));
+  const initialDocuments=documents.length ? documents : ((documentsResult?.data||[]) as MandateDocument[]).filter(doc=>doc.uploaded_at && !doc.application_id).slice(-3);
   const suggestions=user.user_metadata.verification_suggestion;
   const suggestion=suggestions && typeof suggestions==='object' ? suggestions as Record<string,unknown> : {};
   const field=(name:string,max:number)=>typeof suggestion[name]==='string' ? String(suggestion[name]).slice(0,max) : '';
@@ -42,10 +49,13 @@ export default async function Account({ params }: { params: Promise<{ locale: st
   };
   return <main id="main-content" className="container verification-page"><div className="page-heading"><h1>{t.account}</h1></div><div className="content-body">
     {adminResult.data===true && <p><Link className="button" href={`/${locale}/admin/organisations`}>{v.admin}</Link></p>}
+    {!application && !ownOrganizations.length && <p className="auth-feedback" role="status">{getAuthFeedback(locale).confirmed}</p>}
     <ResponsibilityNotice locale={locale}/>
-    {application && <section className="notice" aria-labelledby="application-status"><h2 id="application-status">{v.statuses[application.status]}</h2><p>{application.organization_name}</p>{application.applicant_note && <p>{application.applicant_note}</p>}{application.status!=='approved' && <p>{v.gate}</p>}</section>}
+    {application && <section className="notice" aria-labelledby="application-status"><h2 id="application-status">{v.statuses[application.status]}</h2><p>{application.organization_name}</p>{application.status==='pending' && <p>{getAuthFeedback(locale).pending}</p>}{application.applicant_note && <p>{application.applicant_note}</p>}{application.status!=='approved' && <p>{v.gate}</p>}</section>}
+    {application && documentsEnabled && <MandateDocuments locale={locale} documents={documents}/>}
+    {!documentsEnabled && !ownOrganizations.length && <p className="notice" role="status">{getEvidenceCopy(locale).setup}</p>}
     {ownOrganizations.length ? <><ul>{ownOrganizations.map(org=><li key={org.id}>{org.name}</li>)}</ul>{workspaceConfigured() ? <><p className="notice">{getWorkspaceCopy(locale).boundary}</p><Link className="button" href={`/${locale}/workspace`}>{getWorkspaceCopy(locale).workspace}</Link></> : <p className="notice">{t.liveBoundary}</p>}</> : null}
-    {(!application || ['needs_information','rejected'].includes(application.status)) && !ownOrganizations.length && <OrganisationForm key={application?.revision || 'new'} locale={locale} mode="onboard" enabled initial={initial}/>}
+    {(!application || ['needs_information','rejected'].includes(application.status)) && !ownOrganizations.length && <OrganisationForm key={application?.revision || 'new'} locale={locale} mode="onboard" enabled={documentsEnabled && !documentsResult?.error} initial={initial} initialDocuments={initialDocuments}/>}
     <p><Link className="quiet-link" href={`/${locale}/dashboard`}>{getCopy(locale).openWorkspace}</Link></p>
     <form action={signOut.bind(null,locale)}><button className="text-button" type="submit">{t.signOut}</button></form>
   </div></main>;

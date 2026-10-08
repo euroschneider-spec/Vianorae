@@ -8,7 +8,7 @@ if (process.env.VIANORAE_TEST_FIXTURE !== '1') throw new Error('Test fixture mus
 const db = new PGlite();
 const id = n => `00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const users = [1,2,3,4,5].map(n => ({id:id(n),aud:'authenticated',role:'authenticated',email:`owner${n}@example.test`,email_confirmed_at:'2026-10-01T12:00:00Z',is_anonymous:false,app_metadata:{provider:'email'},user_metadata:{},created_at:'2026-10-01T12:00:00Z'}));
-let verificationEnabled=true;
+let verificationEnabled=true;let evidenceEnabled=true;
 const files = new Map(); const tokens = new Map(); let tail = Promise.resolve();
 const locked = fn => {const result=tail.then(fn);tail=result.catch(()=>{});return result;};
 await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key,email_confirmed_at timestamptz default now(),is_anonymous boolean not null default false,email text default 'fixture@example.test');
@@ -36,12 +36,20 @@ function session(user) {
 }
 const send=(res,status,value,headers={})=>{res.writeHead(status,{'Content-Type':'application/json',...headers});res.end(JSON.stringify(value));};
 const safe=value=>{if(!/^[a-z_]+$/.test(value)) throw new Error('Unsafe identifier');return value;};
-const tables=new Set(['organizations','organization_members','places','place_translations','zones','zone_translations','sensory_profiles','media_assets','guides','guide_steps','organization_applications','organization_review_events']);
+const tables=new Set(['organizations','organization_members','places','place_translations','zones','zone_translations','sensory_profiles','media_assets','guides','guide_steps','organization_applications','organization_review_events','organization_evidence_documents']);
 createServer(async(req,res)=>{
   try {
     const url=new URL(req.url,'http://127.0.0.1:3012');const chunks=[];for await(const chunk of req) chunks.push(chunk);const body=Buffer.concat(chunks);
     if(url.pathname==='/__fixture/verification-mode' && req.method==='POST') {verificationEnabled=JSON.parse(body.toString()).enabled;return send(res,200,{verificationEnabled});}
+    if(url.pathname==='/__fixture/evidence-mode' && req.method==='POST') {evidenceEnabled=JSON.parse(body.toString()).enabled;return send(res,200,{evidenceEnabled});}
     if (url.pathname==='/health') return send(res,200,{ready:true});
+    if(url.pathname==='/auth/v1/signup' || url.pathname==='/auth/v1/resend') {
+      const payload=JSON.parse(body.toString());
+      if(payload.email==='limited@example.test') return send(res,429,{code:'over_email_send_rate_limit',msg:'Email rate limit exceeded'});
+      if(payload.email==='unauthorized@example.test') return send(res,400,{code:'email_address_not_authorized',msg:'Address not authorized'});
+      if(url.pathname==='/auth/v1/resend') return send(res,200,{});
+      return send(res,200,{id:id(20),aud:'authenticated',role:'authenticated',email:payload.email,email_confirmed_at:null,is_anonymous:false,app_metadata:{provider:'email'},user_metadata:payload.data||{},identities:[],created_at:new Date().toISOString()});
+    }
     if (url.pathname==='/auth/v1/token') {
       const payload=JSON.parse(body.toString());const user=url.searchParams.get('grant_type')==='refresh_token'?tokens.get(payload.refresh_token):users.find(u=>u.email===payload.email && payload.password==='Fixture-only-passphrase-123');
       return send(res,user?200:400,user?session(user):{error:'invalid_grant',error_description:'Invalid fixture credentials'});
@@ -49,7 +57,7 @@ createServer(async(req,res)=>{
     const token=(req.headers.authorization || '').replace(/^Bearer /,'');const user=tokens.get(token);
     if (url.pathname==='/auth/v1/user') return send(res,user?200:401,user || {msg:'Invalid token'});
     if (url.pathname==='/auth/v1/logout') {tokens.delete(token);res.writeHead(204);return res.end();}
-    if (!user && !['/rest/v1/rpc/workspace_schema_version','/rest/v1/rpc/organization_verification_schema_version'].includes(url.pathname)) return send(res,401,{code:'42501',message:'Sign in required'});
+    if (!user && !['/rest/v1/rpc/workspace_schema_version','/rest/v1/rpc/organization_verification_schema_version','/rest/v1/rpc/mandate_evidence_schema_version'].includes(url.pathname)) return send(res,401,{code:'42501',message:'Sign in required'});
     await locked(async()=>{
       await db.exec('begin');
       try {
@@ -59,9 +67,12 @@ createServer(async(req,res)=>{
           const rpc=url.pathname.split('/').at(-1);let result;
           if(rpc==='workspace_schema_version') result=(await db.query('select public.workspace_schema_version() value')).rows[0].value;
           else if(rpc==='organization_verification_schema_version') {if(!verificationEnabled) throw new Error('Verification migration unavailable');result=(await db.query('select public.organization_verification_schema_version() value')).rows[0].value;}
+          else if(rpc==='mandate_evidence_schema_version') {if(!evidenceEnabled) throw new Error('Evidence migration unavailable');result=(await db.query('select public.mandate_evidence_schema_version() value')).rows[0].value;}
+          else if(rpc==='reserve_mandate_document') {const p=JSON.parse(body.toString());result=(await db.query('select public.reserve_mandate_document($1,$2,$3,$4) value',[p.original_name,p.content_type,p.bytes,p.digest])).rows[0].value;}
+          else if(rpc==='complete_mandate_document') {const p=JSON.parse(body.toString());result=(await db.query('select public.complete_mandate_document($1) value',[p.document_id])).rows[0].value;}
           else if(rpc==='is_platform_admin') result=(await db.query('select public.is_platform_admin() value')).rows[0].value;
           else if(rpc==='submit_organization_application') {const p=JSON.parse(body.toString());result=(await db.query('select public.submit_organization_application($1::jsonb,$2) value',[JSON.stringify(p.application),p.expected_revision??null])).rows[0].value;}
-          else if(rpc==='review_organization_application') {const p=JSON.parse(body.toString());result=(await db.query('select public.review_organization_application($1,$2,$3,$4,$5,$6,$7,$8) value',[p.application_id,p.expected_revision,p.decision,p.entity_confirmed,p.mandate_confirmed,p.verified_source,p.evidence_reference,p.applicant_note])).rows[0].value;}
+          else if(rpc==='review_organization_application') {const p=JSON.parse(body.toString());result=(await db.query('select public.review_organization_application($1,$2,$3,$4,$5,$6,$7,$8,$9::uuid[]) value',[p.application_id,p.expected_revision,p.decision,p.entity_confirmed,p.mandate_confirmed,p.verified_source,p.evidence_reference,p.applicant_note,p.reviewed_documents])).rows[0].value;}
           else if(rpc==='save_place_draft') {
             const p=JSON.parse(body.toString());
             result=(await db.query('select public.save_place_draft($1,$2,$3,$4,$5::jsonb) value',[p.org,p.place,p.expected_revision,p.content_locale,JSON.stringify(p.draft)])).rows[0].value;
@@ -89,7 +100,7 @@ createServer(async(req,res)=>{
         }
         if(url.pathname.startsWith('/storage/v1/object/')) {
           const rest=url.pathname.slice('/storage/v1/object/'.length).replace(/^authenticated\//,'');const [bucket,...parts]=rest.split('/');const key=decodeURIComponent(parts.join('/'));
-          if(bucket!=='vianorae-private-photos') throw new Error('Unsupported bucket');
+          if(!['vianorae-private-photos','vianorae-mandate-evidence'].includes(bucket)) throw new Error('Unsupported bucket');
           if(req.method==='POST') {
             await db.query('insert into storage.objects(bucket_id,name) values($1,$2)',[bucket,key]);files.set(key,body);
             await db.exec('commit');return send(res,200,{Key:`${bucket}/${key}`,Id:randomUUID()});
@@ -97,7 +108,7 @@ createServer(async(req,res)=>{
           if(req.method==='GET') {
             const visible=(await db.query('select name from storage.objects where bucket_id=$1 and name=$2',[bucket,key])).rows.length;
             await db.exec('commit');if(!visible || !files.has(key)) return send(res,404,{message:'Object not found'});
-            res.writeHead(200,{'Content-Type':'image/webp'});return res.end(files.get(key));
+            res.writeHead(200,{'Content-Type':bucket==='vianorae-private-photos'?'image/webp':key.endsWith('.pdf')?'application/pdf':key.endsWith('.png')?'image/png':'image/jpeg'});return res.end(files.get(key));
           }
         }
         throw new Error(`Unsupported fixture request ${url.pathname}`);

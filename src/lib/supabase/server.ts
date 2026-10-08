@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { authConfigured } from './config';
 
 export async function createClient() {
-  if (!authConfigured()) throw new Error('VIANORAE authentication is not configured');
+  if (!authConfigured()) throw new Error('NERUMA authentication is not configured');
   const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,

@@ -9,3 +9,7 @@ export async function approvedOrganization(supabase:Awaited<ReturnType<typeof cr
   const {data,error}=await supabase.from('organizations').select('id').eq('id',org).eq('approval_status','approved').maybeSingle();
   return !error && !!data;
 }
+
+export async function evidenceReady(supabase:Awaited<ReturnType<typeof createClient>>):Promise<boolean> {
+ try {const {data,error}=await supabase.rpc("mandate_evidence_schema_version");return !error && data===1;} catch {return false;}
+}

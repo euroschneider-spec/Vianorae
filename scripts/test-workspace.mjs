@@ -177,13 +177,34 @@ try {
     await applicant.getByLabel('How can your authority to represent the organisation be confirmed?',{exact:true}).fill('The registered office can independently confirm the director’s written mandate.');
     for(const checkbox of await applicant.locator('.organisation-form').getByRole('checkbox').all()) await checkbox.check();
   };
+  const pdf=Buffer.from('%PDF-1.7\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n');
+  let mandatePath;
   await check('confirmed applicant sees verification form and cannot access the editor',async()=>{
     await login(applicant,4);await expect(applicant.getByRole('button',{name:'Submit for manual review',exact:true})).toBeVisible();
     await applicant.goto(`${base}/en/workspace`);await expect(applicant).toHaveURL(/\/en\/account$/);
     await expect(applicant.getByRole('link',{name:'Organisation workspace',exact:true})).toHaveCount(0);
-    await fillApplication();await applicant.getByRole('button',{name:'Submit for manual review',exact:true}).click();
+    await fillApplication();
+    if(!await applicant.locator('input[name=document]').count()) {
+      await expect(applicant.getByRole('button',{name:'Submit for manual review',exact:true})).toBeDisabled();
+      await applicant.getByLabel('Upload mandate document',{exact:true}).setInputFiles({name:'mandate.pdf',mimeType:'application/pdf',buffer:pdf});
+      await expect(applicant.getByText('Document uploaded privately.',{exact:true})).toBeVisible();
+      mandatePath=await applicant.locator('a[download]').first().getAttribute('href');
+      await applicant.reload();await expect(applicant.locator('input[name=document]')).toHaveCount(1);await fillApplication();
+    }
+    await applicant.getByRole('button',{name:'Submit for manual review',exact:true}).click();
     await expect(applicant.getByRole('heading',{name:'Awaiting manual verification',exact:true})).toBeVisible();
     await expect(applicant.getByRole('button',{name:'Submit for manual review',exact:true})).toHaveCount(0);
+  });
+  await check('mandate download is private, immutable and served as an attachment',async()=>{
+    const owner=await applicantContext.request.get(base+mandatePath);assert.equal(owner.status(),200);assert.deepEqual(await owner.body(),pdf);assert.match(owner.headers()['content-disposition'],/^attachment;/);assert.equal(owner.headers()['cache-control'],'private, no-store');
+    assert.equal((await browser.newContext().then(async c=>{try{return (await c.request.get(base+mandatePath)).status();}finally{await c.close();}})),401);
+    await login(page,2);assert.equal((await context.request.get(base+mandatePath)).status(),404);
+  });
+  await check('cross-origin and malformed mandate uploads are rejected',async()=>{
+    const endpoint=`${base}/api/verification/documents`;
+    const wrong=await applicantContext.request.post(endpoint,{headers:{Origin:'https://other.example.test'},multipart:{file:{name:'mandate.pdf',mimeType:'application/pdf',buffer:pdf}}});assert.equal(wrong.status(),403);
+    const fake=await applicantContext.request.post(endpoint,{headers:{Origin:base},multipart:{file:{name:'fake.pdf',mimeType:'application/pdf',buffer:Buffer.from('not a PDF')}}});assert.equal(fake.status(),400);
+    const huge=await applicantContext.request.post(endpoint,{headers:{Origin:base},multipart:{file:{name:'large.pdf',mimeType:'application/pdf',buffer:Buffer.alloc(3*1024*1024+1)}}});assert.ok([400,413].includes(huge.status()));
   });
   await check('ordinary applicants cannot open the platform review queue',async()=>{
     const response=await applicant.goto(`${base}/en/admin/organisations`);assert.equal(response.status(),404);
@@ -192,6 +213,8 @@ try {
   await check('platform administrator sees pending request and manual evidence controls',async()=>{
     await login(adminPage,3);await adminPage.getByRole('link',{name:'Review organisation requests',exact:true}).click();
     await expect(adminPage.getByRole('heading',{name:'Verified fixture museum',exact:true})).toBeVisible();
+    assert.equal((await adminContext.request.get(base+mandatePath)).status(),200);
+    await expect(adminPage.getByLabel('I opened and checked this mandate document: mandate.pdf',{exact:true})).toHaveJSProperty('required',true);
     await expect(adminPage.getByLabel('Independent mandate confirmation (reference, contact, method and date)',{exact:true})).toHaveJSProperty('required',true);
     const audit=await new AxeBuilder({page:adminPage}).withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa']).analyze();assert.deepEqual(audit.violations,[]);
     await adminPage.setViewportSize({width:320,height:800});await adminPage.addStyleTag({content:'html{font-size:200%}'});
@@ -208,7 +231,15 @@ try {
     await expect(applicant.getByText('Please identify the official contact for confirming your mandate.',{exact:true})).toBeVisible();
   });
   await check('applicant can resubmit corrections without receiving access',async()=>{
-    await fillApplication();await applicant.getByRole('button',{name:'Submit for manual review',exact:true}).click();
+    await fillApplication();
+    if(!await applicant.locator('input[name=document]').count()) {
+      await expect(applicant.getByRole('button',{name:'Submit for manual review',exact:true})).toBeDisabled();
+      await applicant.getByLabel('Upload mandate document',{exact:true}).setInputFiles({name:'mandate.pdf',mimeType:'application/pdf',buffer:pdf});
+      await expect(applicant.getByText('Document uploaded privately.',{exact:true})).toBeVisible();
+      mandatePath=await applicant.locator('a[download]').first().getAttribute('href');
+      await applicant.reload();await expect(applicant.locator('input[name=document]')).toHaveCount(1);await fillApplication();
+    }
+    await applicant.getByRole('button',{name:'Submit for manual review',exact:true}).click();
     await expect(applicant.getByRole('heading',{name:'Awaiting manual verification',exact:true})).toBeVisible();
     await applicant.goto(`${base}/en/workspace`);await expect(applicant).toHaveURL(/\/en\/account$/);
   });
@@ -218,6 +249,7 @@ try {
     await adminPage.getByLabel('Independent mandate confirmation (reference, contact, method and date)',{exact:true}).fill('Fixture mandate confirmed by the independently sourced registered office on 2026-10-07.');
     await adminPage.getByLabel('Message for the applicant',{exact:true}).fill('Your organisation and representative mandate have been verified.');
     await adminPage.getByLabel('I independently verified the organisation’s existence and identity.',{exact:true}).check();
+    await adminPage.getByLabel('I opened and checked this mandate document: mandate.pdf',{exact:true}).check();
     await adminPage.getByLabel('I independently confirmed this person’s authority to represent the organisation.',{exact:true}).check();
     await adminPage.getByRole('button',{name:'Record decision',exact:true}).click();
     await expect(adminPage.getByRole('heading',{name:'Verified fixture museum',exact:true})).toHaveCount(0);
@@ -246,6 +278,32 @@ try {
       assert.equal(await applicant.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);await applicant.setViewportSize({width:1280,height:900});
     });
   }
+  await check('account menu provides sign-in, organisation account and protected administration entry',async()=>{
+    await adminPage.goto(`${base}/en`);await adminPage.locator('.account-link').click();
+    await adminPage.locator('.account-dropdown').getByRole('link',{name:'Platform administration',exact:true}).click();await expect(adminPage).toHaveURL(/\/en\/admin\/organisations$/);
+    await applicant.goto(`${base}/en`);await applicant.locator('.account-link').click();await applicant.locator('.account-dropdown').getByRole('link',{name:'Organisation account',exact:true}).click();await expect(applicant).toHaveURL(/\/en\/account$/);
+  });
+  await check('signup success states email confirmation and explicitly distinguishes unsubmitted organisation request',async()=>{
+    await applicant.goto(`${base}/en/register`);await fillApplication();await applicant.getByLabel('Work email',{exact:true}).fill('signup@example.test');await applicant.getByLabel('Password',{exact:true}).fill('Fixture-only-passphrase-123');
+    await applicant.getByRole('button',{name:'Request organisation access',exact:true}).click();
+    await expect(applicant.getByRole('heading',{name:'Email confirmation needed',exact:true})).toBeVisible();
+    await expect(applicant.getByText('Your organisation request has not been submitted yet.',{exact:false})).toBeVisible();
+    await expect(applicant.getByRole('button',{name:'Request organisation access',exact:true})).toHaveCount(0);
+  });
+  await check('email rate limits and resend feedback are visible without claiming delivery',async()=>{
+    await applicant.goto(`${base}/en/register`);await fillApplication();await applicant.getByLabel('Work email',{exact:true}).fill('limited@example.test');await applicant.getByLabel('Password',{exact:true}).fill('Fixture-only-passphrase-123');
+    await applicant.getByRole('button',{name:'Request organisation access',exact:true}).click();await expect(applicant.getByRole('alert')).toContainText('The email service is limiting requests.');
+    await applicant.goto(`${base}/en/login`);await applicant.getByLabel('Confirmation email address',{exact:true}).fill('limited@example.test');await applicant.getByRole('button',{name:'Resend confirmation email',exact:true}).click();await expect(applicant.getByRole('alert')).toContainText('The email service is limiting requests.');
+    await applicant.getByLabel('Confirmation email address',{exact:true}).fill('confirmed@example.test');await applicant.getByRole('button',{name:'Resend confirmation email',exact:true}).click();await expect(applicant.getByRole('status')).toContainText('The confirmation request was accepted.');
+  });
+  await check('missing evidence migration locks request submission but preserves approved workspaces',async()=>{
+    await fetch('http://127.0.0.1:3012/__fixture/evidence-mode',{method:'POST',body:JSON.stringify({enabled:false})});
+    try {
+      await login(page,5);await expect(page.getByRole('button',{name:'Submit for manual review',exact:true})).toBeDisabled();
+      await expect(page.getByText('Private document upload is being activated.',{exact:false})).toBeVisible();
+      await login(page,1);await page.goto(editUrl);await expect(page).toHaveURL(new RegExp('/en/workspace/'+new URL(editUrl).pathname.split('/').at(-1)+'$'));
+    } finally {await fetch('http://127.0.0.1:3012/__fixture/evidence-mode',{method:'POST',body:JSON.stringify({enabled:true})});}
+  });
   await check('missing verification migration fails closed for registration, workspace and photos',async()=>{
     await login(page,1);await fetch('http://127.0.0.1:3012/__fixture/verification-mode',{method:'POST',body:JSON.stringify({enabled:false})});
     try {

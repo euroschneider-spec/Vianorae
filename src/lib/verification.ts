@@ -6,9 +6,9 @@ export type ApplicationInput = {organisation:string;type:string;representative:s
 export type OrganizationApplication = {
   id:string;applicant_id:string;applicant_email:string;organization_id:string|null;organization_name:string;organization_type:string;
   country_code:string;official_website:string;registry_reference:string;representative_name:string;representative_role:string;
-  authorization_description:string;status:ApplicationStatus;revision:number;applicant_note:string;submitted_at:string;
+  authorization_description:string;status:ApplicationStatus;revision:number;applicant_note:string;submitted_at:string;evidence_document_ids:string[];
 };
-export type ReviewEvent = {id:string;application_id:string;actor_id:string;decision:ApplicationStatus;application_revision:number;verified_source:string;evidence_reference:string;applicant_note:string;created_at:string};
+export type ReviewEvent = {id:string;application_id:string;actor_id:string;decision:ApplicationStatus;application_revision:number;verified_source:string;evidence_reference:string;applicant_note:string;created_at:string;reviewed_document_ids:string[]};
 export function applicationFromForm(form:FormData,locale:Locale):ApplicationInput|null {
   const value=(key:string)=>String(form.get(key)||'').trim();
   const input:ApplicationInput={organisation:value('organisation'),type:value('type'),representative:value('representative'),website:value('website'),country:value('country').toUpperCase(),registry:value('registry'),representativeRole:value('representativeRole'),authorization:value('authorization'),locale,authority:form.get('authority')==='on',responsibility:form.get('responsibility')==='on'};

@@ -34,3 +34,25 @@ The SQL rejects incomplete evidence, stale review/resubmission revisions, self-a
 The isolated PostgreSQL security suite executes every real migration and exercises privilege escalation attempts, tenant isolation, direct API bypasses, evidence requirements, review revisions, legacy data retention and suspension. The isolated browser flow uses those migrations with simulated Auth/Storage HTTP services and covers request, information request, correction, approval, editing, private audit history, suspension and missing-migration gates. Public route, accessibility, reading/audio and local-demo regression checks remain part of CI.
 
 No outbound review notifications are sent automatically. Administrators check the queue; applicants see decisions in their account. Supabase email confirmation still depends on the separately configured Auth URL and email delivery settings.
+
+
+## Private mandate documents
+
+Registration explains the two steps: confirm the personal email first, then upload mandate documents on the signed-in account page before submitting the organisation application. Uploaded files never enter Auth metadata, browser storage, public guides or public buckets. Submit requires one to three uploaded PDF/JPEG/PNG documents, each at most 3 MiB. The server checks file signatures, decodes/re-encodes images to strip metadata, and hashes the stored bytes. PDFs are downloaded as attachments with `nosniff`, a sandbox CSP and no caching; no PDF preview or malware-scanning service is claimed.
+
+`20261007164203_mandate_documents.sql` adds immutable evidence metadata and a dedicated private Storage bucket. Confirmed applicants may reserve and upload their own staged documents; platform administrators can read only evidence bound to submitted applications. Storage has no UPDATE or DELETE policy. Staged uploads survive a page reload; choosing “Remove from this submission” only removes the association from the next submission. Reservations are capped at 10/day and 30/account. Unattached files are retained for now; a retention/cleanup policy is a separate operational decision.
+
+Submission atomically validates ownership, object existence, upload completion and the complete document list, then binds the evidence to the application. Pending submissions and evidence lists cannot change. Corrections require an administrator's information request and the current revision; historical documents remain available for the decision audit. Approval requires explicit confirmation of every document, both independent verification checks and recorded sources. The audit records the reviewed document IDs and request snapshot. The former approval endpoint and private bypass functions are revoked. Existing approved tenants remain approved; legacy pending applications without documents need an information request before approval.
+
+## Authentication email identity
+
+`supabase/templates/confirmation.html` is the VIANORAE EN/RO/DE confirmation template. It uses the standard Supabase confirmation URL and the registration's language preference; user metadata is not used for authorisation. It removes Supabase branding and explains the document and manual-review steps. Prepared configuration is in `supabase/templates/auth-email-settings.example.json`. These files do not update a hosted project by themselves.
+
+The default Supabase SMTP sender cannot be relabelled into an owned sender address. Custom SMTP is required for an actual VIANORAE From name/address; new Free projects using default SMTP also cannot customise templates after the June 3, 2026 policy change. Configure SMTP only in this project's Authentication settings. Use dedicated VIANORAE credentials; do not copy other projects' secrets. Disable the email provider's link tracking, retain email confirmation, and test delivery/redirect with the owner. No live SMTP configuration or email-template change is claimed until the provider and sender have been configured.
+
+
+## Request feedback and administration entry
+
+The header's Account menu links to sign-in, the organisation account, registration and platform administration. These links never grant permissions; the review route still validates the confirmed user and platform-admin role. Registration success is a prominent email-confirmation notice and explicitly states that the organisation request has not yet been submitted. The account page distinguishes email-confirmed/no request from received/awaiting review and shows administrator notes. Signup and resend errors distinguish email rate limits, unauthorised test recipients and unconfirmed accounts without disclosing whether another person's address is registered. The login page includes a resend-confirmation form.
+
+The owner explicitly chose to retain Supabase's default mail sender during this phase. Custom SMTP and branded templates remain prepared reference files only; no live mail configuration, DNS, billing or other project's credentials are changed.

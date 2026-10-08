@@ -77,5 +77,5 @@ test('nonmodal popup permits background keyboard access and outside clicks witho
   await panel.locator('.reading-audio-details summary').click();const speed=panel.getByLabel('Reading speed',{exact:true});await speed.focus();await page.keyboard.press('Tab');
   expect(await panel.evaluate(node=>node.contains(document.activeElement))).toBe(false);await expect(panel).toBeVisible();
   const email=page.getByLabel('Email *',{exact:true});await email.click();await expect(panel).not.toBeVisible();await expect(email).toBeFocused();
-  await launcher.click();await page.getByRole('link',{name:'VIANORAE',exact:true}).first().focus();await page.keyboard.press('Escape');await expect(panel).not.toBeVisible();await expect(launcher).toBeFocused();
+  await launcher.click();await page.getByRole('link',{name:'NERUMA',exact:true}).first().focus();await page.keyboard.press('Escape');await expect(panel).not.toBeVisible();await expect(launcher).toBeFocused();
 });

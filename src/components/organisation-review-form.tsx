@@ -2,10 +2,11 @@
 import { useActionState, useState } from 'react';
 import type { Locale } from '@/lib/i18n';
 import { getVerificationCopy, type OrganizationApplication } from '@/lib/verification';
+import { getEvidenceCopy, type MandateDocument } from '@/lib/mandate-evidence';
 import { reviewOrganization } from '@/app/admin/actions';
 
-export function OrganisationReviewForm({locale,application,self}:{locale:Locale;application:Pick<OrganizationApplication,'id'|'revision'|'status'>;self:boolean}) {
-  const v=getVerificationCopy(locale);
+export function OrganisationReviewForm({locale,application,self,documents}:{locale:Locale;application:Pick<OrganizationApplication,'id'|'revision'|'status'>;self:boolean;documents:MandateDocument[]}) {
+  const v=getVerificationCopy(locale);const e=getEvidenceCopy(locale);
   const initialDecision=application.status==='approved' ? 'suspended' : 'approved';
   const [decision,setDecision]=useState(initialDecision);
   const [state,submit,pending]=useActionState(reviewOrganization.bind(null,locale),{message:''});
@@ -22,7 +23,8 @@ export function OrganisationReviewForm({locale,application,self}:{locale:Locale;
       <label className="form-field wide">{v.note}<textarea name="note" required minLength={10} maxLength={2000} rows={3}/></label>
     </div>
     {approving && <><label className="checkbox-label commitment"><input type="checkbox" name="entity" required/>{v.entity}</label><label className="checkbox-label commitment"><input type="checkbox" name="mandate" required/>{v.mandate}</label></>}
-    <p>{v.audit}</p><button className="button" type="submit">{v.save}</button></fieldset>
+    {approving && (documents.length ? documents.map(doc=><label key={doc.id} className="checkbox-label commitment"><input type="checkbox" name="reviewedDocument" value={doc.id} required/>{e.reviewed} {doc.filename}</label>) : <p role="status">{e.missing}</p>)}
+    <p>{v.audit}</p><button className="button" type="submit" disabled={approving && !documents.length}>{v.save}</button></fieldset>
     {state.message && <p role="status">{state.message}</p>}
   </form>;
 }

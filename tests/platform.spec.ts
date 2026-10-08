@@ -69,7 +69,7 @@ test('publication review requires a saved version and explicit acknowledgements;
 
 test('registration is discoverable and inactive without the separate auth configuration',async({page})=>{
  const posts:string[]=[];page.on('request',request=>{if(request.method()==='POST')posts.push(request.url());});
- await page.goto('/ro');await page.locator('.account-link').click();await expect(page).toHaveURL(/\/ro\/register$/);
+ await page.goto('/ro');await page.locator('.account-link').click();await page.locator('.account-dropdown').getByRole('link',{name:'Solicită acces pentru organizație',exact:true}).click();await expect(page).toHaveURL(/\/ro\/register$/);
  await expect(page.getByRole('heading',{name:'Solicită acces pentru organizație'})).toBeVisible();
  await expect(page.getByText('Organizația ta își asumă întreaga responsabilitate',{exact:false})).toBeVisible();
  await expect(page.getByLabel('Tipul organizației')).toContainText('Hotel');
@@ -86,3 +86,13 @@ test('auth callbacks cannot redirect to an external next parameter without confi
 for(const path of ['/en/register','/ro/register','/de/register','/en/login']){
  test(`organisation WCAG A/AA checks ${path}`,async({page})=>{await page.goto(path);const result=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']).analyze();expect(result.violations).toEqual([]);});
 }
+
+
+test('mobile account menu stays inside viewport and has an accessible name',async({page})=>{
+ await page.setViewportSize({width:320,height:800});await page.goto('/ro');
+ await page.locator('.account-menu summary').click();
+ await expect(page.locator('.account-menu summary')).toHaveAccessibleName('Cont');
+ const bounds=await page.locator('.account-dropdown').boundingBox();
+ expect(bounds).not.toBeNull();expect(bounds!.x).toBeGreaterThanOrEqual(0);expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(320);
+ await expect(page.locator('.account-dropdown').getByRole('link',{name:'Administrare platformă'})).toBeVisible();
+});

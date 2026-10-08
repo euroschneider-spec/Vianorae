@@ -15,7 +15,7 @@ export default async function Workspace({params,searchParams}:{params:Promise<{l
   const organisation=chosen ? context.organisations.find(o=>o.id===chosen) : context.organisations[0];
   if(chosen && !organisation) notFound();
   const places=organisation && workspaceConfigured() ? await listPlaces(context.supabase,organisation.id,locale) : [];
-  return <main id="main-content" className="container"><div className="page-heading"><p className="eyebrow">VIANORAE</p><h1>{t.workspace}</h1>{organisation && <p className="lead">{organisation.name}</p>}</div>
+  return <main id="main-content" className="container"><div className="page-heading"><p className="eyebrow">NERUMA</p><h1>{t.workspace}</h1>{organisation && <p className="lead">{organisation.name}</p>}</div>
     <div className="content-body"><p className="notice">{t.boundary}</p>
       {context.organisations.length>1 && <nav className="button-row" aria-label={getOrganisationCopy(locale).organisation}>{context.organisations.map(o=><Link key={o.id} className="quiet-link" href={`/${locale}/workspace?org=${o.id}`} aria-current={o.id===organisation?.id?'page':undefined}>{o.name}</Link>)}</nav>}
       {!workspaceConfigured() ? <p>{t.readyLater}</p> : !organisation ? <p>{t.forbidden}</p> : <>

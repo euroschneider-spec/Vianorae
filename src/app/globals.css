@@ -70,3 +70,7 @@ fieldset{min-width:0;max-width:100%}legend{max-width:100%;overflow-wrap:anywhere
 .organisation-form, .verification-page { overflow-wrap: anywhere; }
 .organisation-form .form-field { min-width: 0; }
 .organisation-form input:not([type=checkbox]):not([type=hidden]), .organisation-form select, .organisation-form textarea { min-width: 0; max-width: 100%; }
+
+.account-menu{position:relative}.account-menu>summary{cursor:pointer;list-style:none;min-height:44px;padding:8px}.account-menu>summary::-webkit-details-marker{display:none}.account-dropdown{position:absolute;right:0;top:100%;z-index:40;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px #0002;padding:10px;min-width:230px;max-width:calc(100vw - 32px);display:flex;flex-direction:column;gap:3px}.account-dropdown a{padding:10px;border-radius:6px;overflow-wrap:anywhere}.account-dropdown a:hover{background:var(--green-soft)}.account-dropdown a:focus-visible,.account-menu summary:focus-visible{outline:3px solid var(--accent);outline-offset:3px}.auth-feedback{margin:24px 0;padding:24px;border:2px solid var(--accent);border-radius:10px}.auth-feedback h2{margin-top:0}.auth-progress{display:flex;flex-wrap:wrap;gap:10px 24px;padding-left:24px}.auth-progress li{padding:8px 0}
+
+@media(max-width:700px){.account-menu{position:static}.header-actions{position:relative}.account-dropdown{left:0;right:auto;min-width:0;width:min(270px,calc(100vw - 40px))}}
