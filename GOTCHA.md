@@ -54,3 +54,28 @@ server already up on the same port.
 **Takeaway**: stop any `npm run dev` process (or just check `lsof -i:3000`) before running
 `npm run test:e2e` — let Playwright own the server it's configured to use rather than silently
 reusing whatever happens to already be listening on the port.
+
+## 2026-10-08 — "fixed" the theme script warning and brought the flash back
+
+Dark is the stylesheet default, so a visitor who chose light or high contrast needs their stored
+preference applied before first paint. `src/app/[locale]/layout.tsx` does that with a plain inline
+`<script>` in `<head>`. React 19 logs a console error for it: *"Encountered a script tag while
+rendering React component. Scripts inside React components are never executed when rendering on
+the client."*
+
+I tried to silence it with `next/script` and `strategy="beforeInteractive"`. The error went away,
+so it looked fixed. It was not: inspecting the served HTML showed Next had deferred the script
+into its `self.__next_s` queue *after* `<body>`, where it runs during hydration rather than before
+paint. `data-theme` read `dark` at navigation commit and only settled to `light` afterwards — the
+flash was back, now invisible in the console.
+
+**The warning is expected and correct**: the script is inert on a client re-render. It only needs
+to run once, in the server-rendered HTML, which it does. It is logged by development builds only;
+a production server reports no console errors.
+
+**Decision (owner, 8 October 2026)**: keep the inline script. The alternative is reading the
+preference from a cookie and rendering `data-theme` server-side, which removes the script
+entirely but opts all 76 prerendered pages into dynamic rendering.
+
+**Takeaway**: before silencing a framework warning, confirm the replacement still does the job the
+original did. Check the served HTML, not just the console.
