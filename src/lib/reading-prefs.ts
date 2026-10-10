@@ -6,10 +6,11 @@ export type Size='normal'|'large'|'larger';
 export type Width='default'|'narrow';
 export type Font='default'|'hyperlegible';
 export type Density='full'|'summary';
-export type Preferences={size:Size;theme:Theme;spacing:boolean;width:Width;font:Font;density:Density};
+export type Tone='cool'|'warm';
+export type Preferences={size:Size;theme:Theme;spacing:boolean;width:Width;font:Font;density:Density;tone:Tone};
 
 // Dark is the design default; the stored choice is reapplied before paint in the locale layout.
-export const defaults:Preferences={size:'normal',theme:'dark',spacing:false,width:'default',font:'default',density:'full'};
+export const defaults:Preferences={size:'normal',theme:'dark',spacing:false,width:'default',font:'default',density:'full',tone:'cool'};
 export const storageKey='vianorae:reading:v1';
 
 const sizes:Size[]=['normal','large','larger'];
@@ -17,6 +18,7 @@ const themes:Theme[]=['light','dark','contrast'];
 const widths:Width[]=['default','narrow'];
 const fonts:Font[]=['default','hyperlegible'];
 const densities:Density[]=['full','summary'];
+const tones:Tone[]=['cool','warm'];
 
 // Each field is validated on its own so preferences stored before a field existed still load.
 // Rejecting the whole object would silently reset a reader's theme when we add a setting.
@@ -33,6 +35,7 @@ export function fromStored(raw:unknown):Preferences {
     width:one(v.width,widths,defaults.width),
     font:one(v.font,fonts,defaults.font),
     density:one(v.density,densities,defaults.density),
+    tone:one(v.tone,tones,defaults.tone),
   };
 }
 
@@ -44,7 +47,7 @@ export function readPreferences():Preferences {
 export function applyPreferences(p:Preferences) {
   const root=document.documentElement;
   root.dataset.theme=p.theme;root.dataset.textSize=p.size;root.dataset.spacing=String(p.spacing);
-  root.dataset.width=p.width;root.dataset.font=p.font;root.dataset.density=p.density;
+  root.dataset.width=p.width;root.dataset.font=p.font;root.dataset.density=p.density;root.dataset.tone=p.tone;
 }
 
 export function savePreferences(p:Preferences) {
@@ -69,6 +72,7 @@ function watch(attribute:string) {
 
 const themeStore=watch('data-theme');
 const densityStore=watch('data-density');
+const toneStore=watch('data-tone');
 
 export function useTheme():Theme {
   return useSyncExternalStore<Theme>(themeStore,
@@ -80,4 +84,10 @@ export function useDensity():Density {
   return useSyncExternalStore<Density>(densityStore,
     ()=>one(document.documentElement.dataset.density,densities,defaults.density),
     ()=>defaults.density);
+}
+
+export function useTone():Tone {
+  return useSyncExternalStore<Tone>(toneStore,
+    ()=>one(document.documentElement.dataset.tone,tones,defaults.tone),
+    ()=>defaults.tone);
 }

@@ -99,3 +99,31 @@ test('the header offers a single sign-in that fits a narrow viewport',async({pag
  await expect(page.locator('.site-header').getByRole('link',{name:'Administrare platformă'})).toHaveCount(0);
  await signIn.click();await expect(page).toHaveURL(/\/ro\/login$/);
 });
+
+// Warm is a reader's alternative palette, so it has to clear the same contrast sweep as the default.
+for(const theme of ['dark','light']) {
+ test(`warm tone in ${theme} persists and passes automated checks`,async({page})=>{
+  await page.goto('/en');
+  const tone=page.getByRole('group',{name:'Colour tone',exact:true});
+  await tone.getByRole('button',{name:'Warm',exact:true}).click();
+  await expect(page.locator('html')).toHaveAttribute('data-tone','warm');
+  await page.evaluate(t=>{const k='vianorae:reading:v1';localStorage.setItem(k,JSON.stringify({...JSON.parse(localStorage.getItem(k)||'{}'),theme:t}));},theme);
+  for(const path of ['/en','/en/example-guide','/en/for-organisations']) {
+   await page.goto(path);
+   await expect(page.locator('html')).toHaveAttribute('data-tone','warm');
+   await expect(page.locator('html')).toHaveAttribute('data-theme',theme);
+   const results=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']).analyze();
+   expect(results.violations).toEqual([]);
+  }
+ });
+}
+test('the tone control steps aside in high contrast and Cool restores the default',async({page})=>{
+ await page.addInitScript(()=>localStorage.setItem('vianorae:reading:v1',JSON.stringify({theme:'contrast',tone:'warm'})));
+ await page.goto('/en');
+ await expect(page.getByRole('group',{name:'Colour tone',exact:true})).toHaveCount(0);
+ await page.evaluate(()=>localStorage.setItem('vianorae:reading:v1',JSON.stringify({theme:'dark',tone:'warm'})));
+ await page.reload();
+ const tone=page.getByRole('group',{name:'Colour tone',exact:true});
+ await tone.getByRole('button',{name:'Cool',exact:true}).click();
+ await expect(page.locator('html')).toHaveAttribute('data-tone','cool');
+});

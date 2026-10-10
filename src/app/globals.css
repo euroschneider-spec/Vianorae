@@ -63,6 +63,41 @@
   --shadow-lg: none;
 }
 
+/* Warm tone: a reader's alternative to the cool blue, a yellow-leaning green. Dark mode keeps
+   the cool theme's greys exactly; only the accent changes. Same roles and contrast margins.
+   High contrast is deliberately excluded and keeps its fixed palette. */
+:root[data-tone="warm"][data-theme="dark"] {
+  --color-bg: #131519;
+  --color-surface: #1b1e23;
+  --color-text: #e6e8eb;
+  --v-muted: #9aa1ab;
+  --color-divider: #2b2f36;
+  --color-accent: #9fc46a;
+  --color-accent-600: #b2d083;
+  --color-accent-700: #aacb77;
+  --color-accent-100: #1d2319;
+  --color-accent-800: #cfe2ad;
+  --color-neutral-100: #242830;
+  --color-neutral-800: #c4c9d0;
+  --color-neutral-900: #05070a;
+}
+
+:root[data-tone="warm"][data-theme="light"] {
+  --color-bg: #f8f7f0;
+  --color-surface: #ffffff;
+  --color-text: #25251d;
+  --v-muted: #5f5f52;
+  --color-divider: #e2e0d2;
+  --color-accent: #52701f;
+  --color-accent-600: #425b17;
+  --color-accent-700: #3a5014;
+  --color-accent-100: #eaf0d9;
+  --color-accent-800: #2b3c0d;
+  --color-neutral-100: #efeee3;
+  --color-neutral-800: #444438;
+  --color-neutral-900: #25251d;
+}
+
 :root {
   --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --font-heading: var(--font-body);
@@ -364,15 +399,15 @@ legend { padding-inline: var(--space-2); max-width: 100%; font-weight: var(--fon
 .language-switch a[aria-current] { background: var(--color-accent); color: var(--color-bg); font-weight: 600; text-decoration: none; }
 
 
-.density-switch { display: inline-flex; overflow: hidden; border: 1px solid var(--color-divider); border-radius: var(--radius-md); }
-.density-switch button {
+.density-switch, .tone-switch { display: inline-flex; overflow: hidden; border: 1px solid var(--color-divider); border-radius: var(--radius-md); }
+.density-switch button, .tone-switch button {
   display: flex; align-items: center; justify-content: center;
   min-height: 36px; padding: 0 10px; font-size: 0.75rem;
   color: var(--v-muted); background: transparent; border: 0;
 }
-.density-switch button + button { border-left: 1px solid var(--color-divider); }
-.density-switch button:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); color: var(--color-text); }
-.density-switch button[aria-pressed="true"] { background: var(--color-accent); color: var(--color-bg); font-weight: 600; }
+.density-switch button + button, .tone-switch button + button { border-left: 1px solid var(--color-divider); }
+.density-switch button:hover, .tone-switch button:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); color: var(--color-text); }
+.density-switch button[aria-pressed="true"], .tone-switch button[aria-pressed="true"] { background: var(--color-accent); color: var(--color-bg); font-weight: 600; }
 .density-note { margin-bottom: 24px; }
 
 .site-footer {
@@ -659,6 +694,11 @@ legend { padding-inline: var(--space-2); max-width: 100%; font-weight: var(--fon
 .verification-details dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
 .auth-feedback { margin: 24px 0; padding: 24px; border: 1px solid var(--color-accent); border-radius: var(--radius-lg); background: var(--color-accent-100); color: var(--color-accent-800); }
 .auth-feedback h2 { margin-top: 0; font-size: 1.375rem; }
+/* Fields sit on a tinted panel, so they take the page background and a firmer edge to stay visible. */
+.auth-feedback input, .auth-feedback select, .auth-feedback textarea { background: var(--color-bg); border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+/* In the warm tone only the heading carries the green; running text stays neutral. */
+:root[data-tone="warm"] .auth-feedback { color: var(--color-text); }
+:root[data-tone="warm"] .auth-feedback h2 { color: var(--color-accent-800); }
 .auth-progress { display: flex; flex-wrap: wrap; gap: 8px 24px; padding-left: 24px; }
 .auth-progress li { padding: 6px 0; }
 

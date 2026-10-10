@@ -13,11 +13,11 @@ export async function generateMetadata({params}:{params:Promise<{locale:string}>
 // The reading preferences live in localStorage, so the stored theme, text size and spacing
 // are reapplied before first paint. Without this, a visitor who chose light or high contrast
 // would see one dark frame, because dark is the stylesheet default.
-const restorePreferences=`try{var p=JSON.parse(localStorage.getItem('vianorae:reading:v1')||'null')||{};var r=document.documentElement;var pick=function(v,a,d){return a.indexOf(v)>-1?v:d};r.dataset.theme=pick(p.theme,['light','dark','contrast'],'dark');r.dataset.textSize=pick(p.size,['normal','large','larger'],'normal');r.dataset.spacing=String(p.spacing===true);r.dataset.width=pick(p.width,['default','narrow'],'default');r.dataset.font=pick(p.font,['default','hyperlegible'],'default');r.dataset.density=pick(p.density,['full','summary'],'full');}catch(e){}`;
+const restorePreferences=`try{var p=JSON.parse(localStorage.getItem('vianorae:reading:v1')||'null')||{};var r=document.documentElement;var pick=function(v,a,d){return a.indexOf(v)>-1?v:d};r.dataset.theme=pick(p.theme,['light','dark','contrast'],'dark');r.dataset.textSize=pick(p.size,['normal','large','larger'],'normal');r.dataset.spacing=String(p.spacing===true);r.dataset.width=pick(p.width,['default','narrow'],'default');r.dataset.font=pick(p.font,['default','hyperlegible'],'default');r.dataset.density=pick(p.density,['full','summary'],'full');r.dataset.tone=pick(p.tone,['cool','warm'],'cool');}catch(e){}`;
 
 export default async function LocaleLayout({children,params}:{children:React.ReactNode;params:Promise<{locale:string}>}) {
   const {locale}=await params;if(!isLocale(locale))notFound();
-  return <html lang={locale} className={hyperlegible.variable} data-theme="dark" data-density="full" suppressHydrationWarning>
+  return <html lang={locale} className={hyperlegible.variable} data-theme="dark" data-density="full" data-tone="cool" suppressHydrationWarning>
     <head><script dangerouslySetInnerHTML={{__html:restorePreferences}}/></head>
     <body><ReadingSettingsProvider locale={locale}><SiteHeader locale={locale}/>{children}<SiteFooter locale={locale}/></ReadingSettingsProvider></body>
   </html>;
