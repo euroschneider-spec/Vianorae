@@ -2,12 +2,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { Menu, X, ArrowUpRight } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { getCopy, locales, localeNames, type Locale } from '@/lib/i18n';
 import { getOrganisationCopy } from '@/lib/organisation-copy';
 import { contentPages } from '@/lib/content';
 import { PageDensity } from './page-density';
 import { ThemeToggle } from './theme-toggle';
+import { ToneSwitch } from './tone-switch';
 export function Brand() { return <span className="brand"><span className="brand-mark" aria-hidden="true"><span/><span/><span/></span>NERUMA</span>; }
 export function SiteHeader({locale}:{locale:Locale}) {
   const t=getCopy(locale); const account=getOrganisationCopy(locale); const path=usePathname(); const [open,setOpen]=useState(false);
@@ -23,6 +24,7 @@ export function SiteHeader({locale}:{locale:Locale}) {
         </nav>
       </div>
       {readable ? <PageDensity locale={locale}/> : null}
+      <ToneSwitch locale={locale}/>
       <ThemeToggle locale={locale}/>
     </div>
     <header className="site-header"><div className="header-inner">
@@ -32,7 +34,6 @@ export function SiteHeader({locale}:{locale:Locale}) {
         {t.nav.map((name,i)=><Link key={routes[i]} href={`/${locale}/${routes[i]}`} aria-current={path===`/${locale}/${routes[i]}`?'page':undefined} onClick={()=>setOpen(false)}>{name}</Link>)}
       </nav>
       <div className="header-actions">
-        <Link className="button button-small button-outline" href={`/${locale}/example-guide`}>{t.guide}<ArrowUpRight size={15} aria-hidden="true"/></Link>
         <Link className="button button-small header-login" href={`/${locale}/login`} aria-current={path===`/${locale}/login`?'page':undefined}>{account.login}</Link>
       </div>
     </div></header>
