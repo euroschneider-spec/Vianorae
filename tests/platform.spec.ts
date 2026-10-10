@@ -118,11 +118,11 @@ for(const theme of ['dark','light']) {
  });
 }
 test('the tone control steps aside in high contrast and Cool restores the default',async({page})=>{
- await page.addInitScript(()=>localStorage.setItem('vianorae:reading:v1',JSON.stringify({theme:'contrast',tone:'warm'})));
+ const store=(theme:string)=>page.evaluate(t=>localStorage.setItem('vianorae:reading:v1',JSON.stringify({theme:t,tone:'warm'})),theme);
  await page.goto('/en');
+ await store('contrast');await page.reload();
  await expect(page.getByRole('group',{name:'Colour tone',exact:true})).toHaveCount(0);
- await page.evaluate(()=>localStorage.setItem('vianorae:reading:v1',JSON.stringify({theme:'dark',tone:'warm'})));
- await page.reload();
+ await store('dark');await page.reload();
  const tone=page.getByRole('group',{name:'Colour tone',exact:true});
  await tone.getByRole('button',{name:'Cool',exact:true}).click();
  await expect(page.locator('html')).toHaveAttribute('data-tone','cool');
