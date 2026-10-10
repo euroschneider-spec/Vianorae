@@ -119,8 +119,12 @@ try {
     assert.equal((await other.request.get(`${base}${photoPath}`)).status(),404);
     await otherPage.goto(`${base}/en/workspace`);await expect(otherPage.getByText('No locations yet.',{exact:false})).toBeVisible();
   });
-  await check('malformed images are rejected without replacing the saved photo',async()=>{
-    const response=await context.request.post(`${base}/api/workspace/photos`,{multipart:{placeId:editUrl.split('/').at(-1),zoneId:photoPath.split('%2F')[2],file:{name:'bad.webp',mimeType:'image/webp',buffer:Buffer.from('not an image')}}});
+  await check('cross-origin, oversized and malformed images are rejected without replacing the saved photo',async()=>{
+    const endpoint=`${base}/api/workspace/photos`;const fields={placeId:editUrl.split('/').at(-1),zoneId:photoPath.split('%2F')[2]};
+    const wrong=await context.request.post(endpoint,{headers:{Origin:'https://other.example.test'},multipart:{...fields,file:{name:'a.webp',mimeType:'image/webp',buffer:Buffer.from('RIFF')}}});assert.equal(wrong.status(),403);
+    const missing=await context.request.post(endpoint,{multipart:{...fields,file:{name:'a.webp',mimeType:'image/webp',buffer:Buffer.from('RIFF')}}});assert.equal(missing.status(),403);
+    const huge=await context.request.post(endpoint,{headers:{Origin:base},multipart:{...fields,file:{name:'large.webp',mimeType:'image/webp',buffer:Buffer.alloc(3*1024*1024+65537)}}});assert.equal(huge.status(),413);
+    const response=await context.request.post(endpoint,{headers:{Origin:base},multipart:{...fields,file:{name:'bad.webp',mimeType:'image/webp',buffer:Buffer.from('not an image')}}});
     assert.equal(response.status(),400);await page.reload();await expect(page.getByLabel('Image rights / credit',{exact:true})).toHaveValue('VIANORAE test fixture');
   });
   await check('step reorder and removal persist without deleting zone history',async()=>{

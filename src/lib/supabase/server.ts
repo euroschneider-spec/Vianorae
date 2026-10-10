@@ -17,3 +17,12 @@ export async function createClient() {
     } },
   );
 }
+
+export type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
+// The one definition of "signed in" for server code: a server-validated, email-confirmed,
+// non-anonymous user. Returns null otherwise, so callers fail closed.
+export async function confirmedUser(supabase: SupabaseClient) {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  return error || !user || !user.email_confirmed_at || user.is_anonymous ? null : user;
+}

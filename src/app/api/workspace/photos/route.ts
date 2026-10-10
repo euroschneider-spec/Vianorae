@@ -1,7 +1,8 @@
 import sharp from 'sharp';
 import { verificationReady, approvedOrganization } from '@/lib/verification-server';
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { confirmedUser, createClient } from '@/lib/supabase/server';
+import { limitedFormData, sameOrigin } from '@/lib/request-guards';
 import { workspaceConfigured } from '@/lib/workspace-server';
 import { MAX_ONLINE_PHOTO, PHOTO_BUCKET, uuidPattern } from '@/lib/workspace';
 
@@ -11,14 +12,13 @@ const failure=(status:number)=>NextResponse.json({error:'photo-unavailable'},{st
 async function session() {
   if(!workspaceConfigured()) return null;
   const supabase=await createClient();
-  const {data:{user},error}=await supabase.auth.getUser();
-  return error || !user || !user.email_confirmed_at || user.is_anonymous || !await verificationReady(supabase) ? null : supabase;
+  return !await confirmedUser(supabase) || !await verificationReady(supabase) ? null : supabase;
 }
 export async function POST(request:Request) {
   try {
+    if(!sameOrigin(request)) return failure(403);
     const supabase=await session();if(!supabase) return failure(401);
-    if(Number(request.headers.get('content-length'))>MAX_ONLINE_PHOTO+65536) return failure(413);
-    const data=await request.formData();const zoneId=String(data.get('zoneId') || '');const placeId=String(data.get('placeId') || '');const file=data.get('file');
+    const data=await limitedFormData(request,MAX_ONLINE_PHOTO+65536);if(!data) return failure(413);const zoneId=String(data.get('zoneId') || '');const placeId=String(data.get('placeId') || '');const file=data.get('file');
     if(!uuidPattern.test(zoneId) || !uuidPattern.test(placeId) || !(file instanceof File) || file.type!=='image/webp' || file.size===0 || file.size>MAX_ONLINE_PHOTO) return failure(400);
     const zone=await supabase.from('zones').select('id,place_id,organization_id').eq('id',zoneId).eq('place_id',placeId).neq('status','archived').maybeSingle();
     if(zone.error || !zone.data || !await approvedOrganization(supabase,zone.data.organization_id)) return failure(404);

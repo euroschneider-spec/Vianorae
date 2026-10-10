@@ -1,0 +1,72 @@
+import { describe, it, expect } from 'vitest';
+import { newPlace, parsePlaceDraft } from '@/lib/workspace';
+
+const org = crypto.randomUUID();
+const filled = () => {
+  const draft = newPlace();
+  draft.name = 'Willow Museum';
+  draft.city = 'Cluj';
+  draft.zones[0].title = 'Entrance';
+  draft.zones[0].description = 'Step-free door on the left.';
+  return draft;
+};
+const photoFor = (draft: ReturnType<typeof filled>, overrides = {}) => {
+  const id = crypto.randomUUID();
+  return { id, storageKey: `${org}/${draft.id}/${draft.zones[0].id}/${id}.webp`, alt: 'Door', rights: 'Own work', photographedOn: '2026-01-02', ...overrides };
+};
+
+describe('parsePlaceDraft', () => {
+  it('accepts a minimal valid draft', () => {
+    expect(parsePlaceDraft(filled(), org)?.name).toBe('Willow Museum');
+  });
+  it('rejects non-objects, missing names and bad revisions', () => {
+    expect(parsePlaceDraft(null, org)).toBeNull();
+    expect(parsePlaceDraft('x', org)).toBeNull();
+    expect(parsePlaceDraft({ ...filled(), name: '  ' }, org)).toBeNull();
+    expect(parsePlaceDraft({ ...filled(), revision: -1 }, org)).toBeNull();
+    expect(parsePlaceDraft({ ...filled(), revision: 1.5 }, org)).toBeNull();
+  });
+  it('limits zones to 1–8 and rejects duplicate ids', () => {
+    const draft = filled();
+    expect(parsePlaceDraft({ ...draft, zones: [] }, org)).toBeNull();
+    expect(parsePlaceDraft({ ...draft, zones: Array(9).fill(draft.zones[0]) }, org)).toBeNull();
+    expect(parsePlaceDraft({ ...draft, zones: [draft.zones[0], draft.zones[0]] }, org)).toBeNull();
+  });
+  it('validates the country code and sensory levels', () => {
+    expect(parsePlaceDraft({ ...filled(), countryCode: 'ro' }, org)).toBeNull();
+    expect(parsePlaceDraft({ ...filled(), countryCode: 'RO' }, org)?.countryCode).toBe('RO');
+    const draft = filled();
+    draft.zones[0].sensory = { ...draft.zones[0].sensory, sound: 'loud' as never };
+    expect(parsePlaceDraft(draft, org)).toBeNull();
+  });
+  it('trims text fields', () => {
+    expect(parsePlaceDraft({ ...filled(), city: '  Cluj ' }, org)?.city).toBe('Cluj');
+  });
+
+  describe('photos', () => {
+    it('accepts a photo whose storage key matches org, place, zone and photo ids', () => {
+      const draft = filled();
+      draft.zones[0].photo = photoFor(draft);
+      expect(parsePlaceDraft(draft, org)?.zones[0].photo?.alt).toBe('Door');
+    });
+    it('rejects a storage key that points at another organisation', () => {
+      const draft = filled();
+      draft.zones[0].photo = photoFor(draft);
+      expect(parsePlaceDraft(draft, crypto.randomUUID())).toBeNull();
+    });
+    it('rejects missing alt text and rights', () => {
+      const draft = filled();
+      draft.zones[0].photo = photoFor(draft, { alt: '' });
+      expect(parsePlaceDraft(draft, org)).toBeNull();
+      draft.zones[0].photo = photoFor(draft, { rights: '' });
+      expect(parsePlaceDraft(draft, org)).toBeNull();
+    });
+    it('rejects impossible, malformed and future dates', () => {
+      const draft = filled();
+      for (const photographedOn of ['2026-02-30', '02/01/2026', '2999-01-01']) {
+        draft.zones[0].photo = photoFor(draft, { photographedOn });
+        expect(parsePlaceDraft(draft, org)).toBeNull();
+      }
+    });
+  });
+});

@@ -2,7 +2,7 @@
 import { revalidatePath } from 'next/cache';
 import { isLocale } from '@/lib/i18n';
 import { getVerificationCopy } from '@/lib/verification';
-import { createClient } from '@/lib/supabase/server';
+import { confirmedUser, createClient } from '@/lib/supabase/server';
 import { evidenceReady, verificationReady } from '@/lib/verification-server';
 import { uuidPattern } from '@/lib/workspace';
 import type { AuthState } from '@/app/auth/actions';
@@ -19,8 +19,8 @@ export async function reviewOrganization(locale:string,_previous:AuthState,form:
     || note.length<10 || note.length>2000 || source.length>1000 || evidence.length>2000
     || (decision==='approved' && (!entity || !mandate || source.length<10 || evidence.length<20))) return {message:v.error};
   try {
-    const supabase=await createClient();const {data:{user},error}=await supabase.auth.getUser();
-    if(error || !user || !user.email_confirmed_at || user.is_anonymous || !await verificationReady(supabase) || !await evidenceReady(supabase)) return {message:v.error};
+    const supabase=await createClient();
+    if(!await confirmedUser(supabase) || !await verificationReady(supabase) || !await evidenceReady(supabase)) return {message:v.error};
     const admin=await supabase.rpc('is_platform_admin');if(admin.error || admin.data!==true) return {message:v.error};
     const result=await supabase.rpc('review_organization_application',{application_id:id,expected_revision:revision,decision,entity_confirmed:entity,mandate_confirmed:mandate,verified_source:source,evidence_reference:evidence,applicant_note:note,reviewed_documents:reviewed});
     if(result.error) return {message:v.error};

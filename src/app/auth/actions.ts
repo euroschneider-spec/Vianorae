@@ -6,7 +6,7 @@ import { headers } from 'next/headers';
 import { isLocale } from '@/lib/i18n';
 import { getOrganisationCopy } from '@/lib/organisation-copy';
 import { authConfigured } from '@/lib/supabase/config';
-import { createClient } from '@/lib/supabase/server';
+import { confirmedUser, createClient } from '@/lib/supabase/server';
 import { applicationFromForm, getVerificationCopy } from '@/lib/verification';
 import { uuidPattern } from '@/lib/workspace';
 import { getEvidenceCopy } from '@/lib/mandate-evidence';
@@ -16,6 +16,17 @@ import { getViewer } from '@/lib/viewer-server';
 
 export type AuthState = { message: string; confirmation?:boolean };
 const text = (form: FormData, key: string) => String(form.get(key) || '').trim();
+const validEmail = (email: string) => email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+// Where confirmation links point. VIANORAE_SITE_URL, when set, is the only answer, so a forged
+// Host/Origin cannot redirect a confirmation elsewhere. Without it (local runs, previews) the
+// request Origin is used; Supabase's redirect allow-list still has to accept the result.
+async function confirmationCallback(locale: string): Promise<string | null> {
+  const configured = process.env.VIANORAE_SITE_URL;
+  const origin = configured || (await headers()).get('origin');
+  if (!origin || !/^https?:\/\//.test(origin)) return null;
+  try { return `${new URL(origin).origin}/auth/callback?locale=${locale}`; } catch { return null; }
+}
 
 export async function authenticate(locale: string, mode: 'register' | 'login', _previous: AuthState, form: FormData): Promise<AuthState> {
   if (!isLocale(locale)) return { message: 'Invalid language.' };
@@ -23,7 +34,7 @@ export async function authenticate(locale: string, mode: 'register' | 'login', _
   if (!authConfigured()) return { message: t.unavailable };
   const email = text(form, 'email');
   const password = String(form.get('password') || '');
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || password.length > 128
+  if (!validEmail(email) || password.length > 128
     || password.length < (mode === 'register' ? 12 : 1)) return { message: t.invalidFields };
   const application = mode === 'register' ? applicationFromForm(form,locale) : null;
   if (mode === 'register' && !application) return {message:t.invalidFields};
@@ -33,11 +44,10 @@ export async function authenticate(locale: string, mode: 'register' | 'login', _
     const supabase = await createClient();
     if (mode === 'register' && application) {
       if (!await verificationReady(supabase)) return {message:getVerificationCopy(locale).setup};
-      const requestHeaders = await headers();
-      const origin = requestHeaders.get('origin');
-      if (!origin || !/^https?:\/\//.test(origin)) return { message: t.authError };
+      const emailRedirectTo = await confirmationCallback(locale);
+      if (!emailRedirectTo) return { message: t.authError };
       const { error } = await supabase.auth.signUp({ email, password, options: {
-        emailRedirectTo: `${new URL(origin).origin}/auth/callback?locale=${locale}`,
+        emailRedirectTo,
         // These are editable profile suggestions only. They never grant roles or tenancy.
         data: { preferred_locale:locale, display_name: application.representative, organisation_name: application.organisation, organisation_type: application.type, verification_suggestion: application },
       } });
@@ -65,8 +75,7 @@ export async function onboardOrganisation(locale: string, _previous: AuthState, 
   if (!application || (revision!==null && (!Number.isSafeInteger(revision) || revision<1))) return {message:t.invalidFields};
   try {
     const supabase = await createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error || !user || !user.email_confirmed_at || user.is_anonymous) return { message: t.authError };
+    if (!await confirmedUser(supabase)) return { message: t.authError };
     if (!await verificationReady(supabase)) return {message:getVerificationCopy(locale).setup};
     if(!await evidenceReady(supabase)) return {message:getEvidenceCopy(locale).setup};
     const documents=form.getAll('document').map(String);
@@ -86,10 +95,10 @@ export async function signOut(locale: string) {
 export async function resendConfirmation(locale:string,_previous:AuthState,form:FormData):Promise<AuthState> {
  if(!isLocale(locale)) return {message:'Invalid language.'};
  const t=getOrganisationCopy(locale);if(!authConfigured()) return {message:t.unavailable};
- const email=text(form,'email');if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length>254) return {message:t.invalidFields};
+ const email=text(form,'email');if(!validEmail(email)) return {message:t.invalidFields};
  try {
-  const requestHeaders=await headers();const origin=requestHeaders.get('origin');if(!origin || !/^https?:\/\//.test(origin)) return {message:getAuthFeedback(locale).emailError};
-  const supabase=await createClient();const {error}=await supabase.auth.resend({type:'signup',email,options:{emailRedirectTo:`${new URL(origin).origin}/auth/callback?locale=${locale}`}});
+  const emailRedirectTo=await confirmationCallback(locale);if(!emailRedirectTo) return {message:getAuthFeedback(locale).emailError};
+  const supabase=await createClient();const {error}=await supabase.auth.resend({type:'signup',email,options:{emailRedirectTo}});
   return {message:error?authErrorMessage(locale,error.code):getAuthFeedback(locale).resent,confirmation:!error};
  } catch {return {message:getAuthFeedback(locale).emailError};}
 }
