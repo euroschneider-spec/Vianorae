@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { isLocale } from '@/lib/i18n';
-import { createClient } from '@/lib/supabase/server';
+import { confirmedUser, createClient } from '@/lib/supabase/server';
 import { parsePlaceDraft, uuidPattern } from '@/lib/workspace';
 import { approvedOrganization } from '@/lib/verification-server';
 import { workspaceConfigured } from '@/lib/workspace-server';
@@ -15,8 +15,8 @@ export async function savePlaceDraft(org: string, locale: string, input: unknown
   if (!draft) return {ok:false,error:'invalid'};
   try {
     const supabase=await createClient();
-    const {data:{user},error}=await supabase.auth.getUser();
-    if(error || !user || !user.email_confirmed_at || user.is_anonymous) return {ok:false,error:'auth'};
+    const user=await confirmedUser(supabase);
+    if(!user) return {ok:false,error:'auth'};
     if(!await approvedOrganization(supabase,org)) return {ok:false,error:'auth'};
     const role=await supabase.from('organization_members').select('role').eq('user_id',user.id).eq('organization_id',org).maybeSingle();
     if(role.error || !role.data || !isOrganisationRole(role.data.role)) return {ok:false,error:'auth'};

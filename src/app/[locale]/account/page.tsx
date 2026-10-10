@@ -4,7 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { getCopy, isLocale } from '@/lib/i18n';
 import { getOrganisationCopy } from '@/lib/organisation-copy';
 import { authConfigured } from '@/lib/supabase/config';
-import { createClient } from '@/lib/supabase/server';
+import { confirmedUser, createClient } from '@/lib/supabase/server';
 import { signOut } from '@/app/auth/actions';
 import { OrganisationForm } from '@/components/organisation-form';
 import { ResponsibilityNotice } from '@/components/responsibility-notice';
@@ -22,8 +22,8 @@ export default async function Account({ params }: { params: Promise<{ locale: st
   const { locale } = await params; if (!isLocale(locale)) notFound();
   const t=getOrganisationCopy(locale);const v=getVerificationCopy(locale);
   if (!authConfigured()) return <main id="main-content" className="container verification-page"><div className="page-heading"><h1>{t.account}</h1></div><p className="notice">{t.unavailable}</p><div className="content-body"><Link className="button" href={`/${locale}/dashboard`}>{getCopy(locale).openWorkspace}</Link></div></main>;
-  const supabase=await createClient();const {data:{user},error}=await supabase.auth.getUser();
-  if(error || !user || !user.email_confirmed_at || user.is_anonymous) redirect(`/${locale}/login`);
+  const supabase=await createClient();const user=await confirmedUser(supabase);
+  if(!user) redirect(`/${locale}/login`);
   if(!await verificationReady(supabase)) return <main id="main-content" className="container verification-page"><div className="page-heading"><h1>{t.account}</h1></div><p className="notice" role="status">{v.setup}</p><form action={signOut.bind(null,locale)}><button className="text-button">{t.signOut}</button></form></main>;
   const [viewer,applicationResult]=await Promise.all([
     getViewer(supabase,user.id),

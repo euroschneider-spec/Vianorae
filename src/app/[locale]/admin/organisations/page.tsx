@@ -6,7 +6,7 @@ import { getVerificationCopy, type OrganizationApplication, type ReviewEvent } f
 import { MandateDocuments } from '@/components/mandate-documents';
 import { getEvidenceCopy, type MandateDocument } from '@/lib/mandate-evidence';
 import { evidenceReady, verificationReady } from '@/lib/verification-server';
-import { createClient } from '@/lib/supabase/server';
+import { confirmedUser, createClient } from '@/lib/supabase/server';
 import { authConfigured } from '@/lib/supabase/config';
 import { OrganisationReviewForm } from '@/components/organisation-review-form';
 
@@ -15,7 +15,7 @@ export const metadata={title:'Organisation verification · NERUMA',robots:{index
 export default async function ReviewQueue({params,searchParams}:{params:Promise<{locale:string}>;searchParams:Promise<{page?:string;history?:string}>}) {
   const {locale}=await params;if(!isLocale(locale)) notFound();if(!authConfigured()) notFound();
   const v=getVerificationCopy(locale);const t=getOrganisationCopy(locale);const supabase=await createClient();
-  const {data:{user},error}=await supabase.auth.getUser();if(error || !user || !user.email_confirmed_at || user.is_anonymous) redirect(`/${locale}/login`);
+  const user=await confirmedUser(supabase);if(!user) redirect(`/${locale}/login`);
   if(!await verificationReady(supabase)) return <main id="main-content" className="container verification-page"><div className="page-heading"><h1>{v.admin}</h1></div><p className="notice">{v.setup}</p></main>;
   const admin=await supabase.rpc('is_platform_admin');if(admin.error || admin.data!==true) notFound();
   const search=await searchParams;const history=search.history==='1';const requestedPage=Number(search.page||0);const page=Number.isSafeInteger(requestedPage) && requestedPage>=0 && requestedPage<=10000 ? requestedPage : 0;

@@ -1,27 +1,23 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
 import type { Locale } from './i18n';
-import { createClient, type SupabaseClient } from './supabase/server';
+import { confirmedUser, createClient, type SupabaseClient } from './supabase/server';
 import { authConfigured } from './supabase/config';
 import { newZone, uuidPattern, type PlaceDraft, type PlaceSummary } from './workspace';
 import type { SensoryProfile } from './demo';
 import { verificationReady } from './verification-server';
-import { isOrganisationRole } from './roles';
+import { getViewer } from './viewer-server';
 
 export const workspaceConfigured = () => authConfigured() && process.env.VIANORAE_WORKSPACE_ENABLED === '1';
 export async function workspaceSession(locale: Locale) {
   if (!authConfigured()) redirect(`/${locale}/login`);
   const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user || !user.email_confirmed_at || user.is_anonymous) redirect(`/${locale}/login`);
+  const user = await confirmedUser(supabase);
+  if (!user) redirect(`/${locale}/login`);
   if(!await verificationReady(supabase)) redirect(`/${locale}/account`);
-  const [orgResult, roleResult] = await Promise.all([
-    supabase.from('organizations').select('id,name').eq('approval_status','approved').order('created_at').limit(50),
-    supabase.from('organization_members').select('organization_id,role').eq('user_id',user.id).limit(50),
-  ]);
-  if (orgResult.error || roleResult.error) throw new Error('workspace-unavailable');
-  const editable = new Set((roleResult.data || []).filter(row => isOrganisationRole(row.role)).map(row => row.organization_id));
-  const organisations = (orgResult.data || []).filter(row => editable.has(row.id)) as {id:string;name:string}[];
+  const viewer = await getViewer(supabase, user.id);
+  if (!viewer) throw new Error('workspace-unavailable');
+  const organisations = viewer.memberships.map(m => ({ id: m.organisation, name: m.name }));
   if(!organisations.length) redirect(`/${locale}/account`);
   return { supabase, user, organisations };
 }
