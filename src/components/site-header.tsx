@@ -42,10 +42,9 @@ export function SiteHeader({locale}:{locale:Locale}) {
       <button className="menu-toggle icon-button" aria-label={open ? (locale==='ro'?'Închide meniul':locale==='de'?'Menü schließen':'Close menu') : (locale==='ro'?'Deschide meniul':locale==='de'?'Menü öffnen':'Open menu')} aria-expanded={open} aria-controls="site-navigation" onClick={()=>setOpen(!open)}>{open ? <X aria-hidden="true"/> : <Menu aria-hidden="true"/>}</button>
       <nav id="site-navigation" className={open?'navigation is-open':'navigation'} aria-label={locale==='ro'?'Navigare principală':locale==='de'?'Hauptnavigation':'Main navigation'}>
         {t.nav.map((name,i)=><Link key={routes[i]} href={`/${locale}/${routes[i]}`} aria-current={path===`/${locale}/${routes[i]}`?'page':undefined} onClick={()=>setOpen(false)}>{name}</Link>)}
+        {/* For organisations, not visitors: it lives in the menu and says so, rather than as a headline button. */}
+        <Link className="nav-login" href={`/${locale}/login`} aria-current={path===`/${locale}/login`?'page':undefined} onClick={()=>setOpen(false)}>{account.orgLogin}</Link>
       </nav>
-      <div className="header-actions">
-        <Link className="button button-small header-login" href={`/${locale}/login`} aria-current={path===`/${locale}/login`?'page':undefined}>{account.login}</Link>
-      </div>
     </div></header>
   </>;
 }
