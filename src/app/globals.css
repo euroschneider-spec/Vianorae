@@ -228,7 +228,7 @@ main { min-height: 65vh; }
 .button:hover { background: var(--color-accent-600); color: var(--color-bg); }
 .button:active { background: var(--color-accent-700); }
 .button:disabled { opacity: 0.45; cursor: not-allowed; }
-.button-small { min-height: 36px; padding: var(--space-2) 14px; font-size: 0.875rem; gap: 6px; }
+.button-small { min-height: 32px; padding: 4px 14px; font-size: 0.875rem; gap: 6px; }
 .button-outline { background: transparent; border-color: var(--color-divider); color: var(--color-text); }
 .button-outline:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); color: var(--color-text); }
 .quiet-link {
@@ -359,14 +359,14 @@ legend { padding-inline: var(--space-2); max-width: 100%; font-weight: var(--fon
 /* ── Site chrome ─────────────────────────────────────────────────────── */
 .topbar {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 16px;
-  padding: 8px max(16px, calc((100% - var(--container)) / 2 + 24px));
+  padding: 6px max(16px, calc((100% - var(--container)) / 2 + 24px));
   border-bottom: 1px solid var(--color-divider); background: var(--color-bg);
 }
 .theme-toggle { gap: 6px; }
 .site-header { border-bottom: 1px solid var(--color-divider); background: var(--color-bg); }
 .header-inner {
   max-width: var(--container); margin: 0 auto; padding: 0 24px;
-  display: flex; align-items: center; gap: 24px; min-height: 68px;
+  display: flex; align-items: center; gap: 24px; min-height: 60px;
 }
 .brand {
   display: inline-flex; align-items: center; gap: 10px;
@@ -387,27 +387,44 @@ legend { padding-inline: var(--space-2); max-width: 100%; font-weight: var(--fon
 .navigation a:hover, .navigation a[aria-current] { color: var(--color-accent-700); }
 .header-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; min-width: 0; }
 .menu-toggle { display: none; }
-.language-switch { display: flex; align-items: center; gap: 6px; }
-.language-switch nav { display: inline-flex; overflow: hidden; border: 1px solid var(--color-divider); border-radius: var(--radius-md); }
-.language-switch a {
-  display: flex; align-items: center; justify-content: center;
-  min-width: 36px; min-height: 36px; padding: 0 6px;
-  font-size: 0.75rem; color: var(--v-muted); text-decoration: none;
+.language-switch { position: relative; }
+.language-switch summary {
+  display: flex; align-items: center; gap: 4px; list-style: none; cursor: pointer;
+  min-height: 32px; padding: 0 8px 0 10px; font-size: 0.75rem; color: var(--color-text);
+  border: 1px solid var(--color-divider); border-radius: var(--radius-md);
 }
-.language-switch a + a { border-left: 1px solid var(--color-divider); }
-.language-switch a:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); color: var(--color-text); }
-.language-switch a[aria-current] { background: var(--color-accent); color: var(--color-bg); font-weight: 600; text-decoration: none; }
+.language-switch summary::-webkit-details-marker { display: none; }
+.language-switch summary:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+.language-switch summary svg { width: 14px; height: 14px; }
+.language-switch[open] summary svg { transform: rotate(180deg); }
+.language-switch nav {
+  position: absolute; z-index: 950; top: calc(100% + 8px); left: 0; min-width: 100%;
+  display: flex; flex-direction: column; gap: 4px; padding: 6px; white-space: nowrap;
+  border: 1px solid var(--color-divider); border-radius: var(--radius-md);
+  background: var(--color-surface); box-shadow: var(--shadow-lg);
+}
+.language-switch a {
+  display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: var(--radius-sm, 6px);
+  font-size: 0.875rem; color: var(--color-text); text-decoration: none;
+}
+.language-switch a:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+.language-switch a[aria-current] { background: var(--color-accent); color: var(--color-bg); font-weight: 600; }
 
 
 .density-switch, .tone-switch { display: inline-flex; overflow: hidden; border: 1px solid var(--color-divider); border-radius: var(--radius-md); }
 .density-switch button, .tone-switch button {
   display: flex; align-items: center; justify-content: center;
-  min-height: 36px; padding: 0 10px; font-size: 0.75rem;
+  min-height: 32px; padding: 0 10px; font-size: 0.75rem;
   color: var(--v-muted); background: transparent; border: 0;
 }
 .density-switch button + button, .tone-switch button + button { border-left: 1px solid var(--color-divider); }
 .density-switch button:hover, .tone-switch button:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); color: var(--color-text); }
-.density-switch button[aria-pressed="true"], .tone-switch button[aria-pressed="true"] { background: var(--color-accent); color: var(--color-bg); font-weight: 600; }
+/* The selected segment follows the attributes the pre-paint script sets on <html>, not React state,
+   so a refresh does not flash the default segment before hydration. aria-pressed stays for assistive tech. */
+html:not([data-tone="warm"]) .tone-switch button[data-value="cool"],
+html[data-tone="warm"] .tone-switch button[data-value="warm"],
+html:not([data-density="summary"]) .density-switch button[data-value="full"],
+html[data-density="summary"] .density-switch button[data-value="summary"] { background: var(--color-accent); color: var(--color-bg); font-weight: 600; }
 .density-note { margin-bottom: 24px; }
 
 .site-footer {
@@ -827,7 +844,6 @@ p, li, dt, dd, summary, label, figcaption, a, .lbl, .small-label, .small-note { 
   .section { padding-block: 48px; }
   .brand { font-size: 1rem; gap: 8px; letter-spacing: 0.06em; }
   .header-actions { gap: 8px; }
-  .language-switch > svg { display: none; }
   .hero { padding-top: 40px; padding-bottom: 32px; gap: 32px; }
   .hero-visual { width: min(470px, 100%); margin-inline: auto; }
   .visual-orbit { inset: 0; }
@@ -847,8 +863,14 @@ p, li, dt, dd, summary, label, figcaption, a, .lbl, .small-label, .small-note { 
 }
 @media (max-width: 450px) {
   .header-inner { padding-block: 8px; }
-  html[data-spacing="true"] .header-actions { width: 100%; justify-content: flex-end; }
   html[data-spacing="true"] .brand { font-size: 0.8125rem; }
+  /* Small screens: tighter controls so the header leaves room for the page. Still above the 24px WCAG 2.2 AA target. */
+  .topbar { gap: 6px 8px; }
+  .density-switch button, .tone-switch button { padding: 0 8px; }
+  .button { min-height: 40px; padding: 0 16px; }
+  .button-small { padding: 4px 12px; font-size: 0.8125rem; }
+  .btn-lg { min-height: 40px; }
+  .floating-reading { width: 36px; height: 44px; min-width: 36px; min-height: 44px; }
   .button-row .button { width: 100%; }
 }
 

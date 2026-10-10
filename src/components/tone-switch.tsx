@@ -11,7 +11,7 @@ export function ToneSwitch({locale}:{locale:Locale}) {
   const a=getAccessCopy(locale);const tone=useTone();
   if(useTheme()==='contrast')return null;
   return <div className="tone-switch" role="group" aria-label={a.toneLabel}>
-    <button type="button" aria-pressed={tone==='cool'} onClick={()=>setPreference('tone','cool')}>{a.toneCool}</button>
-    <button type="button" aria-pressed={tone==='warm'} onClick={()=>setPreference('tone','warm')}>{a.toneWarm}</button>
+    <button type="button" data-value="cool" aria-pressed={tone==='cool'} onClick={()=>setPreference('tone','cool')}>{a.toneCool}</button>
+    <button type="button" data-value="warm" aria-pressed={tone==='warm'} onClick={()=>setPreference('tone','warm')}>{a.toneWarm}</button>
   </div>;
 }
