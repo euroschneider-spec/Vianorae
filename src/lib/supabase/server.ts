@@ -17,3 +17,5 @@ export async function createClient() {
     } },
   );
 }
+
+export type SupabaseClient = Awaited<ReturnType<typeof createClient>>;

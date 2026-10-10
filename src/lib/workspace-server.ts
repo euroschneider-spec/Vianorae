@@ -1,7 +1,7 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
 import type { Locale } from './i18n';
-import { createClient } from './supabase/server';
+import { createClient, type SupabaseClient } from './supabase/server';
 import { authConfigured } from './supabase/config';
 import { newZone, uuidPattern, type PlaceDraft, type PlaceSummary } from './workspace';
 import type { SensoryProfile } from './demo';
@@ -25,7 +25,7 @@ export async function workspaceSession(locale: Locale) {
   if(!organisations.length) redirect(`/${locale}/account`);
   return { supabase, user, organisations };
 }
-export async function listPlaces(supabase: Awaited<ReturnType<typeof createClient>>, org: string, locale: Locale): Promise<PlaceSummary[]> {
+export async function listPlaces(supabase: SupabaseClient, org: string, locale: Locale): Promise<PlaceSummary[]> {
   const { data, error } = await supabase.from('places').select('id,city,revision,updated_at,place_translations(name,locale)')
     .eq('organization_id',org).neq('status','archived').order('updated_at',{ascending:false}).limit(100);
   if (error) throw new Error('workspace-unavailable');
@@ -40,7 +40,7 @@ export async function listPlaces(supabase: Awaited<ReturnType<typeof createClien
 type Translation = {zone_id:string;title:string;description:string;useful_note:string;next_step:string};
 type Profile = {zone_id:string;sound_level:SensoryProfile['sound'];light_level:SensoryProfile['light'];crowding_level:SensoryProfile['crowding'];smell_level:SensoryProfile['smell'];temperature_level:SensoryProfile['temperature'];visual_complexity_level:SensoryProfile['visual']};
 type Media = {id:string;zone_id:string;storage_key:string;alt_text:Record<string,string>;rights:string;photographed_on:string|null};
-export async function loadPlace(supabase: Awaited<ReturnType<typeof createClient>>, id: string, organisations: {id:string;name:string}[], locale: Locale) {
+export async function loadPlace(supabase: SupabaseClient, id: string, organisations: {id:string;name:string}[], locale: Locale) {
   if (!uuidPattern.test(id)) return null;
   const place = await supabase.from('places').select('id,organization_id,city,address,country_code,place_type,revision').eq('id',id).maybeSingle();
   if (place.error) throw new Error('workspace-unavailable');

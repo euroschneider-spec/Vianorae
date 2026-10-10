@@ -16,6 +16,7 @@ import { getViewer } from '@/lib/viewer-server';
 
 export type AuthState = { message: string; confirmation?:boolean };
 const text = (form: FormData, key: string) => String(form.get(key) || '').trim();
+const validEmail = (email: string) => email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 export async function authenticate(locale: string, mode: 'register' | 'login', _previous: AuthState, form: FormData): Promise<AuthState> {
   if (!isLocale(locale)) return { message: 'Invalid language.' };
@@ -23,7 +24,7 @@ export async function authenticate(locale: string, mode: 'register' | 'login', _
   if (!authConfigured()) return { message: t.unavailable };
   const email = text(form, 'email');
   const password = String(form.get('password') || '');
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || password.length > 128
+  if (!validEmail(email) || password.length > 128
     || password.length < (mode === 'register' ? 12 : 1)) return { message: t.invalidFields };
   const application = mode === 'register' ? applicationFromForm(form,locale) : null;
   if (mode === 'register' && !application) return {message:t.invalidFields};
@@ -86,7 +87,7 @@ export async function signOut(locale: string) {
 export async function resendConfirmation(locale:string,_previous:AuthState,form:FormData):Promise<AuthState> {
  if(!isLocale(locale)) return {message:'Invalid language.'};
  const t=getOrganisationCopy(locale);if(!authConfigured()) return {message:t.unavailable};
- const email=text(form,'email');if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length>254) return {message:t.invalidFields};
+ const email=text(form,'email');if(!validEmail(email)) return {message:t.invalidFields};
  try {
   const requestHeaders=await headers();const origin=requestHeaders.get('origin');if(!origin || !/^https?:\/\//.test(origin)) return {message:getAuthFeedback(locale).emailError};
   const supabase=await createClient();const {error}=await supabase.auth.resend({type:'signup',email,options:{emailRedirectTo:`${new URL(origin).origin}/auth/callback?locale=${locale}`}});

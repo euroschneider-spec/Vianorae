@@ -1,13 +1,12 @@
 import 'server-only';
 import { isOrganisationRole, type Membership, type Viewer } from './roles';
-import type { createClient } from './supabase/server';
+import type { SupabaseClient } from './supabase/server';
 
-type Client=Awaited<ReturnType<typeof createClient>>;
 
 // Resolves both role tiers in one round trip. Pages read this instead of repeating the
 // platform-admin check and the membership join. Returns null when any lookup fails, so callers
 // fail closed rather than rendering as an unprivileged viewer.
-export async function getViewer(supabase:Client,userId:string):Promise<Viewer|null> {
+export async function getViewer(supabase:SupabaseClient,userId:string):Promise<Viewer|null> {
   const [adminResult,orgResult,memberResult]=await Promise.all([
     supabase.rpc('is_platform_admin'),
     supabase.from('organizations').select('id,name').eq('approval_status','approved').order('created_at').limit(50),
