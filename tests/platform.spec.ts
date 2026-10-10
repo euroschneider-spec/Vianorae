@@ -90,14 +90,21 @@ for(const path of ['/en/register','/ro/register','/de/register','/en/login']){
 
 // One sign-in serves every tier: landingPath() routes platform administrators, organisation
 // members and everyone else after authentication, so the header offers no separate doors.
-test('the header offers a single sign-in that fits a narrow viewport',async({page})=>{
+test('organisation sign-in sits in the menu on a narrow viewport and stays out of the way on desktop',async({page})=>{
  await page.setViewportSize({width:320,height:800});await page.goto('/ro');
- const signIn=page.locator('.header-login');
- await expect(signIn).toHaveAccessibleName('Autentificare');
+ const signIn=page.locator('.site-header').getByRole('link',{name:'Autentificare organizație'});
+ await expect(signIn).toBeHidden();
+ const burger=page.locator('.menu-toggle');
+ const burgerBounds=await burger.boundingBox();
+ expect(burgerBounds).not.toBeNull();expect(burgerBounds!.x+burgerBounds!.width).toBeGreaterThan(320-40);
+ await burger.click();
+ await expect(signIn).toBeVisible();
  const bounds=await signIn.boundingBox();
  expect(bounds).not.toBeNull();expect(bounds!.x).toBeGreaterThanOrEqual(0);expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(320);
  await expect(page.locator('.site-header').getByRole('link',{name:'Administrare platformă'})).toHaveCount(0);
  await signIn.click();await expect(page).toHaveURL(/\/ro\/login$/);
+ await page.setViewportSize({width:1280,height:800});await page.goto('/en');
+ await expect(page.locator('.site-header').getByRole('link',{name:'Organisation sign in',exact:true})).toBeVisible();
 });
 
 // Warm is a reader's alternative palette, so it has to clear the same contrast sweep as the default.

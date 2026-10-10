@@ -2,7 +2,7 @@ import type { Locale } from './i18n';
 
 const copy = {
   en: {
-    register: 'Request organisation access', login: 'Sign in',
+    register: 'Request organisation access', login: 'Sign in', orgLogin: 'Organisation sign in',
     accountIntro: 'For museums, hotels, cultural spaces and other organisations that maintain visitor information.',
     unavailable: 'Registration is not active yet. This form does not create an account or send your details. You can explore the demo workspace.',
     organisation: 'Organisation name', type: 'Organisation type', representative: 'Responsible representative',
@@ -36,7 +36,7 @@ const copy = {
     signOut: 'Sign out', liveBoundary: 'Your organisation account is separate from the local demo editor. Database-backed guide editing and publishing are the next stage.',
   },
   ro: {
-    register: 'Solicită acces pentru organizație', login: 'Autentificare',
+    register: 'Solicită acces pentru organizație', login: 'Autentificare', orgLogin: 'Autentificare organizație',
     accountIntro: 'Pentru muzee, hoteluri, spații culturale și alte organizații care întrețin informațiile pentru vizitatori.',
     unavailable: 'Înscrierile nu sunt încă active. Acest formular nu creează un cont și nu trimite datele tale. Poți explora spațiul demo.',
     organisation: 'Numele organizației', type: 'Tipul organizației', representative: 'Reprezentant responsabil',
@@ -70,7 +70,7 @@ const copy = {
     signOut: 'Deconectare', liveBoundary: 'Contul organizației este separat de editorul demo local. Editarea ghidurilor în baza de date și publicarea lor sunt etapa următoare.',
   },
   de: {
-    register: 'Zugang für eine Organisation beantragen', login: 'Anmelden',
+    register: 'Zugang für eine Organisation beantragen', login: 'Anmelden', orgLogin: 'Anmeldung für Organisationen',
     accountIntro: 'Für Museen, Hotels, Kulturorte und andere Organisationen, die Besucherinformationen pflegen.',
     unavailable: 'Die Registrierung ist noch nicht aktiv. Dieses Formular erstellt kein Konto und sendet keine Daten. Sie können den Demo-Arbeitsbereich erkunden.',
     organisation: 'Name der Organisation', type: 'Art der Organisation', representative: 'Verantwortliche Vertretung',
