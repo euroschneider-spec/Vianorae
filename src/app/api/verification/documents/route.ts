@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
 import sharp from 'sharp';
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { confirmedUser, createClient } from '@/lib/supabase/server';
+import { limitedFormData, sameOrigin } from '@/lib/request-guards';
 import { authConfigured } from '@/lib/supabase/config';
 import { evidenceReady } from '@/lib/verification-server';
 import { EVIDENCE_BUCKET, MAX_EVIDENCE_BYTES } from '@/lib/mandate-evidence';
@@ -11,16 +12,14 @@ export const dynamic='force-dynamic';
 const failure=(status:number)=>NextResponse.json({error:'document-unavailable'},{status,headers:{'Cache-Control':'private, no-store'}});
 async function session() {
  if(!authConfigured()) return null;
- const supabase=await createClient();const {data:{user},error}=await supabase.auth.getUser();
- return error || !user || !user.email_confirmed_at || user.is_anonymous ? null : supabase;
+ const supabase=await createClient();
+ return await confirmedUser(supabase) ? supabase : null;
 }
 export async function POST(request:Request) {
  try {
-  // Cross-site form posts cannot consume the authenticated user's upload quota.
-  if(request.headers.get('origin')!==new URL(request.url).origin) return failure(403);
+  if(!sameOrigin(request)) return failure(403);
   const supabase=await session();if(!supabase) return failure(401);if(!await evidenceReady(supabase)) return failure(503);
-  if(Number(request.headers.get('content-length'))>MAX_EVIDENCE_BYTES+65536) return failure(413);
-  const form=await request.formData();const file=form.get('file');
+  const form=await limitedFormData(request,MAX_EVIDENCE_BYTES+65536);if(!form) return failure(413);const file=form.get('file');
   if(!(file instanceof File) || file.size===0 || file.size>MAX_EVIDENCE_BYTES) return failure(400);
   const input=Buffer.from(await file.arrayBuffer());let clean:Buffer;let mime:string;
   if(file.type==='application/pdf') {
