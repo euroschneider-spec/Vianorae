@@ -12,8 +12,8 @@ import { setPreference, useDensity } from '@/lib/reading-prefs';
 export function PageDensity({locale}:{locale:Locale}) {
   const a=getAccessCopy(locale);const density=useDensity();
   return <div className="density-switch" role="group" aria-label={a.howMuch}>
-    <button type="button" aria-pressed={density==='summary'} onClick={()=>setPreference('density','summary')}>{a.summary}</button>
-    <button type="button" aria-pressed={density==='full'} onClick={()=>setPreference('density','full')}>{a.fullPage}</button>
+    <button type="button" data-value="summary" aria-pressed={density==='summary'} onClick={()=>setPreference('density','summary')}>{a.summary}</button>
+    <button type="button" data-value="full" aria-pressed={density==='full'} onClick={()=>setPreference('density','full')}>{a.fullPage}</button>
   </div>;
 }
 
